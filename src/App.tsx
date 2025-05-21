@@ -1,14 +1,7 @@
-import Chart from "./components/Chart"
+import ResizableLayout from "./components/ResizableLayout"
 
 function App() {
-  return (
-    <div style={{ background: "#000", height: "100vh", padding: "1rem" }}>
-      <h1 style={{ color: "#00ccff", textAlign: "center" }}>
-        📈 Trading Terminal
-      </h1>
-      <Chart />
-    </div>
-  )
+  return <ResizableLayout />
 }
 
 export default App

@@ -2,30 +2,36 @@
   "hash": "5bbed488",
   "configHash": "50159c36",
   "lockfileHash": "e9088e1d",
-  "browserHash": "e478ae5b",
+  "browserHash": "611236a5",
   "optimized": {
     "react/jsx-dev-runtime": {
       "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "49089f62",
+      "fileHash": "1480a5fb",
       "needsInterop": true
     },
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "d7729947",
+      "fileHash": "e242c773",
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "60b1b3c3",
+      "fileHash": "a599fb36",
       "needsInterop": true
     },
     "lightweight-charts": {
       "src": "../../node_modules/lightweight-charts/dist/lightweight-charts.development.mjs",
       "file": "lightweight-charts.js",
-      "fileHash": "22060358",
+      "fileHash": "e4a25686",
+      "needsInterop": false
+    },
+    "split.js": {
+      "src": "../../node_modules/split.js/dist/split.es.js",
+      "file": "split__js.js",
+      "fileHash": "6c005093",
       "needsInterop": false
     }
   },

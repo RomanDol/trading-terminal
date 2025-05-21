@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react"
-import { createChart } from "lightweight-charts"
-import type { LineSeriesPartialOptions } from "lightweight-charts"
+import {
+  createChart,
+  type LineSeriesPartialOptions,
+  type IChartApi,
+} from "lightweight-charts"
 
 export default function Chart() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<IChartApi | null>(null)
 
   useEffect(() => {
     if (!chartContainerRef.current) return
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 500,
+      height: chartContainerRef.current.clientHeight,
       layout: {
         background: { color: "#111" },
         textColor: "#DDD",
@@ -20,6 +24,8 @@ export default function Chart() {
         horzLines: { color: "#222" },
       },
     })
+
+    chartRef.current = chart
 
     const lineSeries = chart.addLineSeries({
       color: "#00ccff",
@@ -34,7 +40,22 @@ export default function Chart() {
       { time: "2024-05-05", value: 120 },
     ])
 
-    return () => chart.remove()
+    // 📌 Resize Observer: реагирует на изменение размера контейнера
+    const observer = new ResizeObserver(() => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.resize(
+          chartContainerRef.current.clientWidth,
+          chartContainerRef.current.clientHeight
+        )
+      }
+    })
+
+    observer.observe(chartContainerRef.current)
+
+    return () => {
+      chart.remove()
+      observer.disconnect()
+    }
   }, [])
 
   return (
