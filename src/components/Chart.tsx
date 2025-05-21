@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react"
-import {
-  createChart,
-  type LineSeriesPartialOptions,
-  type IChartApi,
-} from "lightweight-charts"
+import { createChart } from "lightweight-charts"
+import type { IChartApi } from "lightweight-charts"
+import type { ISeriesApi } from "lightweight-charts"
+import type { UTCTimestamp } from "lightweight-charts"
 
 export default function Chart() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
+  const seriesRef = useRef<ISeriesApi<"Line"> | null>(null)
 
   useEffect(() => {
     if (!chartContainerRef.current) return
@@ -25,36 +25,48 @@ export default function Chart() {
       },
     })
 
-    chartRef.current = chart
-
-    const lineSeries = chart.addLineSeries({
+    const series = chart.addLineSeries({
       color: "#00ccff",
       lineWidth: 2,
-    } as LineSeriesPartialOptions)
+    })
 
-    lineSeries.setData([
-      { time: "2024-05-01", value: 100 },
-      { time: "2024-05-02", value: 110 },
-      { time: "2024-05-03", value: 105 },
-      { time: "2024-05-04", value: 115 },
-      { time: "2024-05-05", value: 120 },
-    ])
+    chartRef.current = chart
+    seriesRef.current = series
 
-    // 📌 Resize Observer: реагирует на изменение размера контейнера
-    const observer = new ResizeObserver(() => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.resize(
+    // Подключаемся к Binance WebSocket
+    const ws = new WebSocket(
+      "wss://stream.binance.com:9443/ws/btcusdt@kline_1m"
+    )
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data)
+
+      const k = message.k // kline
+      if (!k || !k.c) return
+
+      const point = {
+        time: Math.floor(k.t / 1000) as UTCTimestamp,
+        value: parseFloat(k.c),
+      }
+
+      seriesRef.current?.update(point)
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (chartContainerRef.current) {
+        chart.resize(
           chartContainerRef.current.clientWidth,
           chartContainerRef.current.clientHeight
         )
       }
     })
 
-    observer.observe(chartContainerRef.current)
+    resizeObserver.observe(chartContainerRef.current)
 
     return () => {
+      ws.close()
       chart.remove()
-      observer.disconnect()
+      resizeObserver.disconnect()
     }
   }, [])
 
