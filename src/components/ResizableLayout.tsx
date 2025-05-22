@@ -2,6 +2,8 @@ import { useEffect } from "react"
 import Split from "split.js"
 import Chart from "./Chart"
 import BottomPanel from "./BottomPanel"
+import MarketSelector from "./MarketSelector"
+import TabbedPanel from "./TabbedPanel"
 
 export default function ResizableLayout() {
   useEffect(() => {
@@ -80,8 +82,7 @@ export default function ResizableLayout() {
           overflowY: "auto",
         }}
       >
-        <h2 style={{ marginTop: 0 }}>⚙️ Parameters</h2>
-        <p>Здесь будут настройки стратегии</p>
+        <TabbedPanel />
       </div>
     </div>
   )

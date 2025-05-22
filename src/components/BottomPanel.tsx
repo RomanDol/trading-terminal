@@ -100,7 +100,6 @@ function TabButton({
         background: active ? "#333" : "transparent",
         color: active ? "#fff" : "#888",
         border: "none",
-        borderBottom: active ? "2px solid #00ccff" : "2px solid transparent",
         cursor: "pointer",
         outline: "none",
       }}

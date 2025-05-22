@@ -6,6 +6,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts"
 import type { LogicalRange } from "lightweight-charts"
+import { useMarket } from "./MarketContext"
 
 type Candle = {
   time: UTCTimestamp
@@ -15,10 +16,7 @@ type Candle = {
   close: number
 }
 
-const SYMBOL = "btcusdt"
-const INTERVAL = "1m"
 const LIMIT = 1000
-const MS_PER_CANDLE = 60 * 1000
 
 export default function Chart() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -28,6 +26,8 @@ export default function Chart() {
   const [loadedCandles, setLoadedCandles] = useState<Candle[]>([])
   const earliestTimeRef = useRef<number | null>(null)
   const loadingRef = useRef(false)
+
+  const { symbol, timeframe } = useMarket()
 
   useEffect(() => {
     if (!chartContainerRef.current) return
@@ -63,7 +63,7 @@ export default function Chart() {
 
     const fetchInitialData = async () => {
       const res = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${SYMBOL.toUpperCase()}&interval=${INTERVAL}&limit=${LIMIT}`
+        `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${timeframe}&limit=${LIMIT}`
       )
       const data = await res.json()
       const candles: Candle[] = data.map((d: any) => ({
@@ -80,9 +80,8 @@ export default function Chart() {
 
     fetchInitialData()
 
-    // Realtime WebSocket
     const ws = new WebSocket(
-      `wss://stream.binance.com:9443/ws/${SYMBOL}@kline_${INTERVAL}`
+      `wss://fstream.binance.com/ws/${symbol.toLowerCase()}@kline_${timeframe}`
     )
 
     ws.onmessage = (event) => {
@@ -101,7 +100,6 @@ export default function Chart() {
       seriesRef.current.update(newCandle)
     }
 
-    // Lazy load handler
     const onScroll = async (range: LogicalRange | null) => {
       if (!range || loadingRef.current || !earliestTimeRef.current) return
 
@@ -111,7 +109,7 @@ export default function Chart() {
 
         const endTime = earliestTimeRef.current - 1
         const res = await fetch(
-          `https://api.binance.com/api/v3/klines?symbol=${SYMBOL.toUpperCase()}&interval=${INTERVAL}&endTime=${endTime}&limit=${LIMIT}`
+          `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${timeframe}&endTime=${endTime}&limit=${LIMIT}`
         )
         const data = await res.json()
 
@@ -141,7 +139,6 @@ export default function Chart() {
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(onScroll)
 
-    // Resize
     const resizeObserver = new ResizeObserver(() => {
       if (chartContainerRef.current) {
         chart.resize(
@@ -158,7 +155,7 @@ export default function Chart() {
       chart.remove()
       resizeObserver.disconnect()
     }
-  }, [])
+  }, [symbol, timeframe])
 
   return (
     <div ref={chartContainerRef} style={{ width: "100%", height: "100%" }} />
