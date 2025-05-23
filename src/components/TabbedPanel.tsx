@@ -1,13 +1,20 @@
 import { useState } from "react"
 import MarketSelector from "./MarketSelector"
 import StrategyInputs from "./StrategyInputs"
+import StrategyExplorer from "./StrategyExplorer"
+import { useMarket } from "./MarketContext"
 
 export default function TabbedPanel() {
-  const [activeTab, setActiveTab] = useState<"market" | "strategy">("market")
+   const { symbol, timeframe } = useMarket()
+  const [activeTab, setActiveTab] = useState<
+    "market" | "strategy" | "strategies"
+  >("market")
+  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null)
 
   const tabs = [
     { key: "market", label: "📊 Market" },
     { key: "strategy", label: "⚙️ Strategy" },
+    { key: "strategies", label: "📂 Strategies" },
   ] as const
 
   return (
@@ -32,7 +39,29 @@ export default function TabbedPanel() {
 
       <div style={{ flexGrow: 1, overflow: "hidden" }}>
         {activeTab === "market" && <MarketSelector />}
-        {activeTab === "strategy" && <StrategyInputs />}
+        {activeTab === "strategy" && (
+          <StrategyInputs selectedStrategy={selectedStrategy} />
+        )}
+        {activeTab === "strategies" && (
+          <StrategyExplorer
+            onSelectStrategy={async (strategyPath) => {
+              setSelectedStrategy(strategyPath)
+              setActiveTab("strategy")
+
+              const res = await fetch("http://127.0.0.1:8000/run-strategy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  path: strategyPath,
+                  symbol,
+                  timeframe,
+                }),
+              })
+              const result = await res.json()
+              console.log("Auto-run result:", result)
+            }}
+          />
+        )}
       </div>
     </div>
   )
@@ -64,4 +93,3 @@ function TabButton({
     </button>
   )
 }
- 

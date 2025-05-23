@@ -1,38 +1,44 @@
 {
-  "hash": "5bbed488",
+  "hash": "d99e27d3",
   "configHash": "50159c36",
-  "lockfileHash": "e9088e1d",
-  "browserHash": "611236a5",
+  "lockfileHash": "36003d1d",
+  "browserHash": "800406d5",
   "optimized": {
     "react/jsx-dev-runtime": {
       "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "1480a5fb",
+      "fileHash": "7b6f7fe1",
       "needsInterop": true
     },
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "e242c773",
+      "fileHash": "625684c5",
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "a599fb36",
+      "fileHash": "689a9a5f",
       "needsInterop": true
     },
     "lightweight-charts": {
       "src": "../../node_modules/lightweight-charts/dist/lightweight-charts.development.mjs",
       "file": "lightweight-charts.js",
-      "fileHash": "e4a25686",
+      "fileHash": "1fd02d18",
       "needsInterop": false
     },
     "split.js": {
       "src": "../../node_modules/split.js/dist/split.es.js",
       "file": "split__js.js",
-      "fileHash": "6c005093",
+      "fileHash": "e8b51a19",
       "needsInterop": false
+    },
+    "dayjs": {
+      "src": "../../node_modules/dayjs/dayjs.min.js",
+      "file": "dayjs.js",
+      "fileHash": "251adfc0",
+      "needsInterop": true
     }
   },
   "chunks": {
