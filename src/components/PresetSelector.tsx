@@ -6,14 +6,23 @@ export default function PresetSelector({
   strategyPath,
   currentValues,
   onLoad,
+  activePresetName,
 }: {
   strategyPath: string
   currentValues: { [key: string]: any }
   onLoad: (preset: any) => void
+  activePresetName?: string | null
 }) {
   const [presets, setPresets] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState<string>("")
   const [newName, setNewName] = useState("")
+
+  useEffect(() => {
+    if (activePresetName) {
+      setSelectedPreset(activePresetName)
+      setNewName(activePresetName)
+    }
+  }, [activePresetName])
 
   useEffect(() => {
     fetch(`${API}/api/presets/list`, {

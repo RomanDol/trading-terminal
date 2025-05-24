@@ -8,6 +8,7 @@ export default function StrategyInputs({
 }: {
   selectedStrategy: string | null
 }) {
+  const [activePresetName, setActivePresetName] = useState<string | null>(null)
   const [inputs, setInputs] = useState<any>({}) // весь пресет
   const [values, setValues] = useState<any>({}) // просто name → value
   const [steps, setSteps] = useState<any>({})
@@ -24,9 +25,13 @@ export default function StrategyInputs({
     fetch(`http://127.0.0.1:8000/load-inputs?path=${strategyDir}`)
       .then((res) => res.json())
       .then((data) => {
-        const preset = data.find((p: any) => p.preset === "default")
+        const preset =
+          data.find((p: any) => p.isActive) ??
+          data.find((p: any) => p.preset === "default")
+
         if (!preset) return
         const { preset: _, ...fields } = preset
+        setActivePresetName(preset.preset)
         setInputs(fields)
         setValues(
           Object.fromEntries(
@@ -48,8 +53,7 @@ export default function StrategyInputs({
   }, [selectedStrategy])
 
   const updateValue = (name: string, value: string | number) => {
-   setValues((prev: { [key: string]: any }) => ({ ...prev, [name]: value }))
-
+    setValues((prev: { [key: string]: any }) => ({ ...prev, [name]: value }))
   }
 
   const runBacktest = async () => {
@@ -92,6 +96,7 @@ export default function StrategyInputs({
               { ...inputs[k], value: v },
             ])
           )}
+          activePresetName={activePresetName}
         />
       )}
 
