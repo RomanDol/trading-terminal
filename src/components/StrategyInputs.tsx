@@ -86,7 +86,12 @@ export default function StrategyInputs({
         <PresetSelector
           strategyPath={selectedStrategy.replace(/\/[^\/]+\.py$/, "")}
           onLoad={handlePresetLoad}
-          currentValues={inputs}
+          currentValues={Object.fromEntries(
+            Object.entries(values).map(([k, v]) => [
+              k,
+              { ...inputs[k], value: v },
+            ])
+          )}
         />
       )}
 
