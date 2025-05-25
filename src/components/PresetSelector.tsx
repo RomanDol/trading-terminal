@@ -1,3 +1,4 @@
+// ✅ PresetSelector.tsx с версионированием временных пресетов
 import { useEffect, useState } from "react"
 
 const API = import.meta.env.VITE_API_URL
@@ -7,22 +8,18 @@ export default function PresetSelector({
   currentValues,
   onLoad,
   activePresetName,
+  onSelectPreset,
 }: {
   strategyPath: string
   currentValues: { [key: string]: any }
-  onLoad: (preset: any) => void
+  onLoad?: (preset: any) => void
   activePresetName?: string | null
+  onSelectPreset: (name: string, inputs: any) => void
 }) {
   const [presets, setPresets] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState<string>("")
   const [newName, setNewName] = useState("")
-
-  useEffect(() => {
-    if (activePresetName) {
-      setSelectedPreset(activePresetName)
-      setNewName(activePresetName)
-    }
-  }, [activePresetName])
+  const [version, setVersion] = useState<number>(0)
 
   useEffect(() => {
     fetch(`${API}/api/presets/list`, {
@@ -34,8 +31,24 @@ export default function PresetSelector({
       .then((data) => setPresets(data.presets ?? []))
   }, [strategyPath])
 
+  // ✅ Упрощённо: просто сбрасываем имя и версию
   useEffect(() => {
-    if (!strategyPath || !currentValues) return
+    if (activePresetName) {
+      const baseName = activePresetName.replace(/^__\d+__/, "")
+      setSelectedPreset(baseName)
+      setNewName(baseName)
+      setVersion(0) // 💥 начинать с нуля
+    }
+  }, [activePresetName])
+
+  useEffect(() => {
+    if (!strategyPath || !selectedPreset || !currentValues) return
+
+    const tempName = `__${version}__${selectedPreset}`
+    const updatedInputs = {
+      ...currentValues,
+      isActive: true,
+    }
 
     const timeout = setTimeout(() => {
       fetch(`${API}/api/presets/save`, {
@@ -43,25 +56,65 @@ export default function PresetSelector({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           strategyPath,
-          presetName: "__temporary",
-          inputs: currentValues,
+          presetName: tempName,
+          inputs: updatedInputs,
         }),
+      }).then(() => {
+        if (!presets.includes(tempName)) {
+          setPresets((prev) => [...prev, tempName])
+        }
+
+        // Увеличиваем версию ТОЛЬКО если этот темп уже существует (значит была перезапись)
+        if (presets.includes(tempName)) {
+          setVersion((v) => v + 1)
+        }
       })
+       
     }, 1000)
 
     return () => clearTimeout(timeout)
-  }, [JSON.stringify(currentValues), strategyPath])
+  }, [JSON.stringify(currentValues)])
+
+  const deleteTempVersions = (base: string) => {
+    presets
+      .filter((p) => p.match(new RegExp(`^__\\d+__${base}$`)))
+      .forEach((name) => {
+        fetch(`${API}/api/presets/delete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ strategyPath, presetName: name }),
+        })
+      })
+  }
 
   const loadPreset = (name: string) => {
-    setSelectedPreset(name)
-    setNewName(name)
+    const baseName = selectedPreset.replace(/^__\d+__/, "")
+    const hasTempVersion = presets.some((p) =>
+      p.match(new RegExp(`^__\d+__${baseName}$`))
+    )
+
+    if (selectedPreset && hasTempVersion) {
+      const confirmDiscard = window.confirm(
+        `Save changes to "${selectedPreset}" before switching?`
+      )
+      if (!confirmDiscard) {
+        const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
+        deleteTempVersions(oldBaseName)
+        setVersion(0) // 💥 сбрасываем версию вручную
+      }
+    }
+
+    const cleanedName = name.replace(/^__\d+__/, "")
+    setSelectedPreset(cleanedName)
+    setNewName(cleanedName)
+
     fetch(`${API}/api/presets/load`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ strategyPath, presetName: name }),
     })
       .then((res) => res.json())
-      .then((data) => data.success && onLoad(data.inputs))
+      .then((data) => data.success && onSelectPreset(cleanedName, data.inputs))
   }
 
   const savePreset = () => {
@@ -72,6 +125,8 @@ export default function PresetSelector({
     if (alreadyExists && !window.confirm("Preset already exists. Overwrite?")) {
       return
     }
+
+    deleteTempVersions(name)
 
     fetch(`${API}/api/presets/save`, {
       method: "POST",
@@ -84,14 +139,12 @@ export default function PresetSelector({
     }).then(() => {
       setPresets((prev) => (alreadyExists ? prev : [...prev, name]))
       setSelectedPreset(name)
-      // 👇 не очищаем newName — оставляем имя
-      // setNewName("")
     })
   }
 
   const deletePreset = () => {
     if (!selectedPreset) return
-    if (!window.confirm(`Delete preset "${selectedPreset}"?`)) return
+    if (!window.confirm(`Delete preset \"${selectedPreset}\"?`)) return
 
     fetch(`${API}/api/presets/delete`, {
       method: "POST",
@@ -131,11 +184,13 @@ export default function PresetSelector({
           }}
         >
           <option value="">-- Select preset --</option>
-          {presets.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
+          {presets
+            .filter((p) => !/^__\d*__/.test(p))
+            .map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
         </select>
 
         <button

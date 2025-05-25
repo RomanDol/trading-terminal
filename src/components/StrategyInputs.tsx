@@ -89,7 +89,6 @@ export default function StrategyInputs({
       {selectedStrategy && (
         <PresetSelector
           strategyPath={selectedStrategy.replace(/\/[^\/]+\.py$/, "")}
-          onLoad={handlePresetLoad}
           currentValues={Object.fromEntries(
             Object.entries(values).map(([k, v]) => [
               k,
@@ -97,6 +96,20 @@ export default function StrategyInputs({
             ])
           )}
           activePresetName={activePresetName}
+          onSelectPreset={(name, fields) => {
+            setActivePresetName(name)
+            setInputs(fields)
+            setValues(
+              Object.fromEntries(
+                Object.entries(fields).map(([k, v]: any) => [k, v.value])
+              )
+            )
+            setSteps(
+              Object.fromEntries(
+                Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
+              )
+            )
+          }}
         />
       )}
 
