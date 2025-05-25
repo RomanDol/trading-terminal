@@ -44,13 +44,24 @@ export default function PresetSelector({
   useEffect(() => {
     if (!strategyPath || !selectedPreset || !currentValues) return
 
-    const tempName = `__${version}__${selectedPreset}`
+    const baseName = selectedPreset
     const updatedInputs = {
       ...currentValues,
       isActive: true,
     }
 
+    // Находим все временные версии __N__baseName
+    const currentVersions = presets
+      .filter((p) => p.startsWith(`__`) && p.endsWith(`__${baseName}`))
+      .map((p) => parseInt(p.split("__")[1]))
+      .filter((n) => !isNaN(n))
+
+    const nextVersion =
+      currentVersions.length > 0 ? Math.max(...currentVersions) + 1 : 0
+    const tempName = `__${version}__${selectedPreset.replace(/^__\d+__/, "")}`
+
     const timeout = setTimeout(() => {
+
       fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,61 +74,97 @@ export default function PresetSelector({
         if (!presets.includes(tempName)) {
           setPresets((prev) => [...prev, tempName])
         }
-
-        // Увеличиваем версию ТОЛЬКО если этот темп уже существует (значит была перезапись)
-        if (presets.includes(tempName)) {
-          setVersion((v) => v + 1)
-        }
+        setVersion((v) => v + 1) // 💥 увеличиваем версию после сохранения
       })
-       
     }, 1000)
 
     return () => clearTimeout(timeout)
   }, [JSON.stringify(currentValues)])
 
-  const deleteTempVersions = (base: string) => {
-    presets
-      .filter((p) => p.match(new RegExp(`^__\\d+__${base}$`)))
-      .forEach((name) => {
+  const deleteTempVersions = async (base: string) => {
+    // 1. Получаем актуальный список всех пресетов с сервера
+    const res = await fetch(`${API}/api/presets/list`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ strategyPath }),
+    })
+
+    const data = await res.json()
+    const allPresets = data.presets ?? []
+
+    // 2. Находим только временные версии __N__base
+    const toDelete = allPresets.filter((p: string) =>
+      p.match(new RegExp(`^__\\d+__${base}$`))
+    )
+
+    // 3. Отправляем запросы на удаление только существующих
+    await Promise.all(
+      toDelete.map((name: string) =>
         fetch(`${API}/api/presets/delete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ strategyPath, presetName: name }),
         })
-      })
+      )
+    )
   }
 
-  const loadPreset = (name: string) => {
-    const baseName = selectedPreset.replace(/^__\d+__/, "")
-    const hasTempVersion = presets.some((p) =>
-      p.match(new RegExp(`^__\d+__${baseName}$`))
-    )
+  const loadPreset = async (name: string) => {
+    const prevBase = selectedPreset.replace(/^__\d+__/, "")
+    const newBase = name.replace(/^__\d+__/, "")
 
-    if (selectedPreset && hasTempVersion) {
-      const confirmDiscard = window.confirm(
-        `Save changes to "${selectedPreset}" before switching?`
+    // определить номер текущей временной версии (если есть)
+    const currentIsTemp = selectedPreset.startsWith("__")
+    const currentVersion = currentIsTemp
+      ? parseInt(selectedPreset.split("__")[1])
+      : null
+
+    let discard = true
+    if (currentIsTemp && currentVersion !== null && currentVersion > 0) {
+      discard = !window.confirm(
+        "Save changes to current preset before switching?"
       )
-      if (!confirmDiscard) {
-        const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
-        deleteTempVersions(oldBaseName)
-        setVersion(0) // 💥 сбрасываем версию вручную
-      }
     }
 
-    const cleanedName = name.replace(/^__\d+__/, "")
-    setSelectedPreset(cleanedName)
-    setNewName(cleanedName)
+    // ❗ удаляем временные только если база изменилась
+    const baseChanged = prevBase !== newBase
+    if (discard && baseChanged) {
+      await deleteTempVersions(prevBase)
+      setVersion(0)
+    }
 
-    fetch(`${API}/api/presets/load`, {
+    const res = await fetch(`${API}/api/presets/load`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ strategyPath, presetName: name }),
     })
-      .then((res) => res.json())
-      .then((data) => data.success && onSelectPreset(cleanedName, data.inputs))
+
+    const data = await res.json()
+    if (data.success) {
+      setSelectedPreset(`__0__${newBase}`)
+      setNewName(newBase)
+      setPresets((prev) =>
+        prev.includes(`__0__${newBase}`) ? prev : [...prev, `__0__${newBase}`]
+      )
+      onSelectPreset(`__0__${newBase}`, data.inputs)
+
+      await fetch(`${API}/api/presets/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategyPath,
+          presetName: `__0__${newBase}`,
+          inputs: {
+            ...data.inputs,
+            isActive: true,
+          },
+        }),
+      })
+      setVersion(1)
+    }
   }
 
-  const savePreset = () => {
+  const savePreset = async () => {
     const name = newName.trim()
     if (!name) return
 
@@ -126,9 +173,9 @@ export default function PresetSelector({
       return
     }
 
-    deleteTempVersions(name)
+    await deleteTempVersions(name) // 🔧 Ждём завершения удаления
 
-    fetch(`${API}/api/presets/save`, {
+    await fetch(`${API}/api/presets/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -136,10 +183,10 @@ export default function PresetSelector({
         presetName: name,
         inputs: currentValues,
       }),
-    }).then(() => {
-      setPresets((prev) => (alreadyExists ? prev : [...prev, name]))
-      setSelectedPreset(name)
     })
+
+    setPresets((prev) => (alreadyExists ? prev : [...prev, name]))
+    setSelectedPreset(name)
   }
 
   const deletePreset = () => {
