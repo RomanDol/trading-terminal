@@ -1,7 +1,7 @@
 // StrategyInputs.tsx — улучшенный вариант с передачей полного пресета
 
 import { useEffect, useState } from "react"
-import PresetSelector from "./PresetSelector"
+import PresetSelector from "./PresetSelector/PresetSelector"
 
 export default function StrategyInputs({
   selectedStrategy,

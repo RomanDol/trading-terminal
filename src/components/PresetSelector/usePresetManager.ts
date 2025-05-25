@@ -1,0 +1,150 @@
+import { useCallback } from "react"
+
+const API = import.meta.env.VITE_API_URL
+
+export function usePresetManager({
+  strategyPath,
+  onSelectPreset,
+  setPresets,
+  setSelectedPreset,
+  setNewName,
+  setVersion,
+}: {
+  strategyPath: string
+  onSelectPreset: (name: string, inputs: any) => void
+  setPresets: React.Dispatch<React.SetStateAction<string[]>>
+  setSelectedPreset: React.Dispatch<React.SetStateAction<string>>
+  setNewName: React.Dispatch<React.SetStateAction<string>>
+  setVersion: React.Dispatch<React.SetStateAction<number>>
+}) {
+  const deleteTempVersions = useCallback(
+    async (base: string) => {
+      const res = await fetch(`${API}/api/presets/list`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strategyPath }),
+      })
+      const data = await res.json()
+      const allPresets: string[] = data.presets ?? []
+
+      const toDelete = allPresets.filter((p) =>
+        p.match(new RegExp(`^__\\d+__${base}$`))
+      )
+
+      await Promise.all(
+        toDelete.map((presetName) =>
+          fetch(`${API}/api/presets/delete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ strategyPath, presetName }),
+          })
+        )
+      )
+    },
+    [strategyPath]
+  )
+
+  const savePreset = useCallback(
+    async (name: string, inputs: any, presets: string[]) => {
+      await deleteTempVersions(name)
+
+      await fetch(`${API}/api/presets/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strategyPath, presetName: name, inputs }),
+      })
+
+      setPresets((prev) => (presets.includes(name) ? prev : [...prev, name]))
+      setSelectedPreset(name)
+    },
+    [strategyPath, deleteTempVersions]
+  )
+
+  const loadPreset = useCallback(
+    async (name: string, current: string, presets: string[]) => {
+      const prevBase = current.replace(/^__\d+__/, "")
+      const newBase = name.replace(/^__\d+__/, "")
+
+      const currentIsTemp = current.startsWith("__")
+      const currentVersion = currentIsTemp
+        ? parseInt(current.split("__")[1])
+        : null
+
+      let discard = true
+      if (currentIsTemp && currentVersion !== null && currentVersion > 0) {
+        discard = !window.confirm(
+          "Save changes to current preset before switching?"
+        )
+      }
+
+      const baseChanged = prevBase !== newBase
+      if (discard && baseChanged) {
+        await deleteTempVersions(prevBase)
+        setVersion(0)
+      }
+
+      const res = await fetch(`${API}/api/presets/load`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strategyPath, presetName: name }),
+      })
+      const data = await res.json()
+      if (!data.success) return
+
+      const autoName = `__0__${newBase}`
+      setSelectedPreset(autoName)
+      setNewName(newBase)
+      setPresets((prev) =>
+        prev.includes(autoName) ? prev : [...prev, autoName]
+      )
+      onSelectPreset(autoName, data.inputs)
+
+      await fetch(`${API}/api/presets/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategyPath,
+          presetName: autoName,
+          inputs: { ...data.inputs, isActive: true },
+        }),
+      })
+
+      const nextVersion =
+        Math.max(
+          0,
+          ...presets
+            .filter((p) => p.startsWith("__") && p.endsWith(`__${newBase}`))
+            .map((p) => parseInt(p.split("__")[1]))
+            .filter((n) => !isNaN(n))
+        ) + 1
+
+      setVersion(nextVersion)
+    },
+    [strategyPath, deleteTempVersions]
+  )
+
+  const deletePreset = useCallback(
+    (selected: string) => {
+      if (!selected) return
+      if (!window.confirm(`Delete preset "${selected}"?`)) return
+
+      fetch(`${API}/api/presets/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strategyPath, presetName: selected }),
+      }).then(() => {
+        setPresets((prev) => prev.filter((p) => p !== selected))
+        setSelectedPreset("")
+        setNewName("")
+      })
+    },
+    [strategyPath]
+  )
+
+  return {
+    loadPreset,
+    savePreset,
+    deletePreset,
+    deleteTempVersions,
+  }
+}
