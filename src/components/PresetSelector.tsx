@@ -61,7 +61,6 @@ export default function PresetSelector({
     const tempName = `__${version}__${selectedPreset.replace(/^__\d+__/, "")}`
 
     const timeout = setTimeout(() => {
-
       fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,7 +159,15 @@ export default function PresetSelector({
           },
         }),
       })
-      setVersion(1)
+      const nextVersion =
+        Math.max(
+          0,
+          ...presets
+            .filter((p) => p.startsWith("__") && p.endsWith(`__${newBase}`))
+            .map((p) => parseInt(p.split("__")[1]))
+            .filter((n) => !isNaN(n))
+        ) + 1
+      setVersion(nextVersion)
     }
   }
 
