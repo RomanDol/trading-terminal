@@ -9,6 +9,7 @@ export function usePresetManager({
   setSelectedPreset,
   setNewName,
   setVersion,
+  setIsLoadingPreset,
 }: {
   strategyPath: string
   onSelectPreset: (name: string, inputs: any) => void
@@ -16,6 +17,7 @@ export function usePresetManager({
   setSelectedPreset: React.Dispatch<React.SetStateAction<string>>
   setNewName: React.Dispatch<React.SetStateAction<string>>
   setVersion: React.Dispatch<React.SetStateAction<number>>
+  setIsLoadingPreset?: (value: boolean) => void
 }) {
   const deleteTempVersions = useCallback(
     async (base: string) => {
@@ -62,6 +64,7 @@ export function usePresetManager({
 
   const loadPreset = useCallback(
     async (name: string, current: string, presets: string[]) => {
+      setIsLoadingPreset?.(true)
       const prevBase = current.replace(/^__\d+__/, "")
       const newBase = name.replace(/^__\d+__/, "")
 
@@ -119,6 +122,7 @@ export function usePresetManager({
         ) + 1
 
       setVersion(nextVersion)
+      setIsLoadingPreset?.(false)
     },
     [strategyPath, deleteTempVersions]
   )
@@ -147,4 +151,67 @@ export function usePresetManager({
     deletePreset,
     deleteTempVersions,
   }
+}
+
+export async function replaceWithFreshTempVersion(
+  strategyPath: string,
+  baseName: string,
+  inputs: any,
+  setPresets: (p: string[]) => void
+) {
+  const API = import.meta.env.VITE_API_URL
+
+  // Получаем текущий список пресетов
+  const existingListRes = await fetch(`${API}/api/presets/list`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ strategyPath }),
+  })
+  const existingListData = await existingListRes.json()
+  const existingPresets = new Set<string>(existingListData.presets ?? [])
+
+  
+
+  const tempNames = Array.from(existingPresets).filter((p: string) =>
+    /^__\d+__/.test(p)
+  )
+
+
+  for (const name of tempNames) {
+    if (!existingPresets.has(name)) continue // безопасная проверка
+
+    const res = await fetch(`${API}/api/presets/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ strategyPath, presetName: name }),
+    })
+
+    const result = await res.json()
+    if (!result.success && result.error !== "Preset not found") {
+      console.warn("⚠️ Ошибка удаления:", name, result.error)
+    }
+  }
+
+  // Сохраняем новую временную версию __0__
+  const tempName = `__0__${baseName}`
+  const inputsCopy = { ...inputs, isActive: false }
+
+  await fetch(`${API}/api/presets/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      strategyPath,
+      presetName: tempName,
+      inputs: inputsCopy,
+    }),
+  })
+
+  // Обновляем список пресетов
+  const newList = await fetch(`${API}/api/presets/list`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ strategyPath }),
+  })
+  const data = await newList.json()
+  setPresets(data.presets ?? [])
 }

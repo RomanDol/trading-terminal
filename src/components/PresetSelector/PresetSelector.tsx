@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import PresetControls from "./PresetControls"
 import { usePresetManager } from "./usePresetManager"
+import { replaceWithFreshTempVersion } from "./usePresetManager"
 
 const API = import.meta.env.VITE_API_URL
 
@@ -15,10 +16,10 @@ export default function PresetSelector({
   activePresetName?: string | null
   onSelectPreset: (name: string, inputs: any) => void
 }) {
+  const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState<string>("")
   const [newName, setNewName] = useState("")
-  const [version, setVersion] = useState<number>(0)
 
   const { loadPreset, savePreset, deletePreset } = usePresetManager({
     strategyPath,
@@ -26,9 +27,11 @@ export default function PresetSelector({
     setPresets,
     setSelectedPreset,
     setNewName,
-    setVersion,
+    setVersion: () => {},
+    setIsLoadingPreset, // <== добавили
   })
 
+  // Загружаем список всех пресетов
   useEffect(() => {
     fetch(`${API}/api/presets/list`, {
       method: "POST",
@@ -39,26 +42,31 @@ export default function PresetSelector({
       .then((data) => setPresets(data.presets ?? []))
   }, [strategyPath])
 
+  // При инициализации — сбрасываем selected и имя
   useEffect(() => {
     if (activePresetName) {
       const baseName = activePresetName.replace(/^__\d+__/, "")
       setSelectedPreset(baseName)
       setNewName(baseName)
-      setVersion(0)
     }
   }, [activePresetName])
 
+  // Автосохранение временных версий
   useEffect(() => {
-    if (!strategyPath || !selectedPreset || !currentValues) return
+    if (!strategyPath || !selectedPreset || !currentValues || isLoadingPreset)
+      return
 
     const baseName = selectedPreset.replace(/^__\d+__/, "")
     const updatedInputs = { ...currentValues, isActive: true }
-    const currentVersions = presets
+
+    const tempVersions = presets
       .filter((p) => p.startsWith("__") && p.endsWith(`__${baseName}`))
       .map((p) => parseInt(p.split("__")[1]))
       .filter((n) => !isNaN(n))
 
-    const tempName = `__${version}__${baseName}`
+    const nextVersion =
+      tempVersions.length > 0 ? Math.max(...tempVersions) + 1 : 1
+    const tempName = `__${nextVersion}__${baseName}`
 
     const timeout = setTimeout(() => {
       fetch(`${API}/api/presets/save`, {
@@ -73,7 +81,6 @@ export default function PresetSelector({
         if (!presets.includes(tempName)) {
           setPresets((prev) => [...prev, tempName])
         }
-        setVersion((v) => v + 1)
       })
     }, 1000)
 
@@ -86,8 +93,52 @@ export default function PresetSelector({
       selectedPreset={selectedPreset}
       newName={newName}
       onChangeName={setNewName}
-      onSelectPreset={(name) => loadPreset(name, selectedPreset, presets)}
-      onSave={() => savePreset(newName, currentValues, presets)}
+      onSelectPreset={async (name) => {
+        const baseName = selectedPreset.replace(/^__\d+__/, "")
+        const tempVersions = presets
+          .filter((p) => p.startsWith("__") && p.endsWith(`__${baseName}`))
+          .map((p) => parseInt(p.split("__")[1]))
+          .filter((n) => !isNaN(n))
+
+        const hasUnsavedChanges =
+          tempVersions.length > 1 || (tempVersions[0] ?? 0) > 0
+
+        if (hasUnsavedChanges) {
+          const confirmSave = window.confirm(
+            "Do you want to save changes before switching preset?"
+          )
+          if (!confirmSave) return
+
+          await savePreset(newName, currentValues, presets)
+        }
+
+        loadPreset(name, selectedPreset, presets)
+
+        loadPreset(name, selectedPreset, presets)
+      }}
+      onSave={async () => {
+        const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
+        const newBaseName = newName.replace(/^__\d+__/, "")
+
+        // 1. Удаляем все временные версии старого пресета
+        await replaceWithFreshTempVersion(
+          strategyPath,
+          oldBaseName,
+          currentValues,
+          setPresets
+        )
+
+        // 2. Сохраняем основной пресет
+        await savePreset(newName, currentValues, presets)
+
+        // 3. Создаём новую временную версию с новым именем
+        await replaceWithFreshTempVersion(
+          strategyPath,
+          newBaseName,
+          currentValues,
+          setPresets
+        )
+      }}
       onDelete={() => deletePreset(selectedPreset)}
     />
   )
