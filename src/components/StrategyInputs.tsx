@@ -84,8 +84,6 @@ export default function StrategyInputs({
 
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>
-      <h4>⚙️ Strategy Parameters</h4>
-
       {selectedStrategy && (
         <PresetSelector
           strategyPath={selectedStrategy.replace(/\/[^\/]+\.py$/, "")}
@@ -113,73 +111,77 @@ export default function StrategyInputs({
         />
       )}
 
-      {Object.entries(inputs).map(([name, field]: any) => (
-        <div key={name} style={{ marginBottom: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <label
-              style={{ minWidth: "120px", color: "#ccc", fontWeight: 500 }}
+      {Object.entries(inputs)
+        .filter(([name]) => name !== "isActive") // ⬅️ добавили фильтр
+        .map(([name, field]: any) => (
+          <div key={name} style={{ marginBottom: "1rem" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}
             >
-              {field.description}
-            </label>
+              <label
+                style={{ minWidth: "120px", color: "#ccc", fontWeight: 500 }}
+              >
+                {field.description}
+              </label>
 
-            <input
-              type={typeof field.value === "number" ? "number" : "text"}
-              step={steps[name] ?? 1}
-              value={values[name]}
-              onChange={(e) =>
-                updateValue(
-                  name,
-                  typeof field.value === "number"
-                    ? parseFloat(e.target.value)
-                    : e.target.value
-                )
-              }
-              style={{
-                width: "100px",
-                padding: "0.4rem",
-                background: "#111",
-                color: "#eee",
-                border: "1px solid #444",
-                borderRadius: 4,
-              }}
-            />
-
-            {typeof field.value === "number" && (
               <input
-                type="number"
-                value={steps[name] ?? 1}
+                type={typeof field.value === "number" ? "number" : "text"}
+                step={steps[name] ?? 1}
+                value={values[name]}
                 onChange={(e) =>
-                  setSteps((prev: any) => ({
-                    ...prev,
-                    [name]: parseFloat(e.target.value) || 1,
-                  }))
+                  updateValue(
+                    name,
+                    typeof field.value === "number"
+                      ? parseFloat(e.target.value)
+                      : e.target.value
+                  )
                 }
                 style={{
-                  width: "70px",
+                  width: "100px",
+                  padding: "0.4rem",
                   background: "#111",
-                  color: "#aaa",
+                  color: "#eee",
                   border: "1px solid #444",
                   borderRadius: 4,
-                  padding: "0.4rem",
                 }}
-                title="Step size"
               />
-            )}
 
-            {(name === "symbol" || name === "timeframe") && (
-              <div
-                style={{
-                  fontSize: "0.85rem",
-                  color: "#777",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {name === "symbol" ? defaults.symbol : defaults.timeframe}
-              </div>
-            )}
+              {typeof field.value === "number" && (
+                <input
+                  type="number"
+                  value={steps[name] ?? 1}
+                  onChange={(e) =>
+                    setSteps((prev: any) => ({
+                      ...prev,
+                      [name]: parseFloat(e.target.value) || 1,
+                    }))
+                  }
+                  style={{
+                    width: "70px",
+                    background: "#111",
+                    color: "#aaa",
+                    border: "1px solid #444",
+                    borderRadius: 4,
+                    padding: "0.4rem",
+                  }}
+                  title="Step size"
+                />
+              )}
+
+              {(name === "symbol" || name === "timeframe") && (
+                <div
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#777",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {name === "symbol" ? defaults.symbol : defaults.timeframe}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
       <button onClick={runBacktest}>▶️ Run Backtest</button>
     </div>

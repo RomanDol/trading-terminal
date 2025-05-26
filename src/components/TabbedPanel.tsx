@@ -12,9 +12,9 @@ export default function TabbedPanel() {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null)
 
   const tabs = [
-    { key: "market", label: "📊 Market" },
-    { key: "strategy", label: "⚙️ Strategy" },
-    { key: "strategies", label: "📂 Strategies" },
+    { key: "market", label: "Market" },
+    { key: "strategy", label: "Parameters" },
+    { key: "strategies", label: "Strategies" },
   ] as const
 
   return (

@@ -222,8 +222,6 @@ export default function PresetSelector({
 
   return (
     <div style={{ marginBottom: "1rem" }}>
-      <h4>💾 Presets</h4>
-
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
         <select
           value={selectedPreset}
