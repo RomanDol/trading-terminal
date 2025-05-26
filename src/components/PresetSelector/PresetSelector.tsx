@@ -19,12 +19,14 @@ export default function PresetSelector({
   onSelectPreset: (name: string, inputs: any) => void
   }) {
     const [searchParams, setSearchParams] = useSearchParams()
-    const initialPreset = searchParams.get("preset") || ""
+    // const initialPreset = searchParams.get("preset") || ""
     
   const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
-  const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
+  // const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
   const [newName, setNewName] = useState("")
+
+  const [selectedPreset, setSelectedPreset] = useState<string>("")
 
   const { loadPreset, savePreset, deletePreset } = usePresetManager({
     strategyPath,
@@ -110,18 +112,18 @@ export default function PresetSelector({
 
         if (hasUnsavedChanges) {
           const confirmSave = window.confirm(
-            "Do you want to save changes in '" + baseName + "' preset?"
+            "Do you want to save changes before switching preset?"
           )
-          if (confirmSave) return
+          if (!confirmSave) return
 
           await savePreset(newName, currentValues, presets)
         }
 
         // Обновляем selectedPreset + URL
         setSelectedPreset(name)
-        const newParams = new URLSearchParams(searchParams)
-        newParams.set("preset", name)
-        setSearchParams(newParams)
+        // const newParams = new URLSearchParams(searchParams)
+        // newParams.set("preset", name)
+        // setSearchParams(newParams)
 
         loadPreset(name, selectedPreset, presets)
       }}

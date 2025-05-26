@@ -16,6 +16,11 @@ export default function StrategyInputs({
     symbol?: string
     timeframe?: string
   }>({})
+  const [originalPresetValues, setOriginalPresetValues] = useState<{
+    symbol?: string
+    timeframe?: string
+  }>({})
+  
 
   useEffect(() => {
     if (!selectedStrategy) return
@@ -30,6 +35,18 @@ export default function StrategyInputs({
           data.find((p: any) => p.preset === "default")
 
         if (!preset) return
+
+        const baseName = preset.preset.replace(/^__\d+__/, "")
+        const original = data.find((p: any) => p.preset === baseName)
+
+        const originalSymbol = original?.symbol?.value
+        const originalTimeframe = original?.timeframe?.value
+
+        setOriginalPresetValues({
+          symbol: originalSymbol,
+          timeframe: originalTimeframe,
+        })
+      
         const { preset: _, ...fields } = preset
         setActivePresetName(preset.preset)
         setInputs(fields)
@@ -123,7 +140,6 @@ export default function StrategyInputs({
               >
                 {field.description}
               </label>
-
               <input
                 type={typeof field.value === "number" ? "number" : "text"}
                 step={steps[name] ?? 1}
@@ -145,7 +161,6 @@ export default function StrategyInputs({
                   borderRadius: 4,
                 }}
               />
-
               {typeof field.value === "number" && (
                 <input
                   type="number"
@@ -168,6 +183,19 @@ export default function StrategyInputs({
                 />
               )}
 
+              {(name === "str_name" || name === "strategy") &&
+                activePresetName && (
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "#777",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {activePresetName.replace(/^__\d+__/, "")}
+                  </div>
+                )}
+
               {(name === "symbol" || name === "timeframe") && (
                 <div
                   style={{
@@ -176,7 +204,9 @@ export default function StrategyInputs({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {name === "symbol" ? defaults.symbol : defaults.timeframe}
+                  {name === "symbol"
+                    ? originalPresetValues.symbol
+                    : originalPresetValues.timeframe}
                 </div>
               )}
             </div>
