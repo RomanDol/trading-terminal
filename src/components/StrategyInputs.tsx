@@ -19,8 +19,8 @@ export default function StrategyInputs({
   const [originalPresetValues, setOriginalPresetValues] = useState<{
     symbol?: string
     timeframe?: string
+    file_name?: string
   }>({})
-  
 
   useEffect(() => {
     if (!selectedStrategy) return
@@ -41,12 +41,15 @@ export default function StrategyInputs({
 
         const originalSymbol = original?.symbol?.value
         const originalTimeframe = original?.timeframe?.value
+        const originalFileName = original?.file_name?.value
+
 
         setOriginalPresetValues({
           symbol: originalSymbol,
           timeframe: originalTimeframe,
+          file_name: originalFileName,
         })
-      
+
         const { preset: _, ...fields } = preset
         setActivePresetName(preset.preset)
         setInputs(fields)
@@ -84,20 +87,20 @@ export default function StrategyInputs({
     console.log("Backtest result:", result)
   }
 
-  const handlePresetLoad = (preset: any) => {
-    const { preset: _, ...fields } = preset
-    setInputs(fields)
-    setValues(
-      Object.fromEntries(
-        Object.entries(fields).map(([k, v]: any) => [k, v.value])
-      )
-    )
-    setSteps(
-      Object.fromEntries(
-        Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
-      )
-    )
-  }
+  // const handlePresetLoad = (preset: any) => {
+  //   const { preset: _, ...fields } = preset
+  //   setInputs(fields)
+  //   setValues(
+  //     Object.fromEntries(
+  //       Object.entries(fields).map(([k, v]: any) => [k, v.value])
+  //     )
+  //   )
+  //   setSteps(
+  //     Object.fromEntries(
+  //       Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
+  //     )
+  //   )
+  // }
 
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>
@@ -124,6 +127,23 @@ export default function StrategyInputs({
                 Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
               )
             )
+
+            // Загрузим оригинальный пресет
+            const baseName = name.replace(/^__\d+__/, "")
+            const strategyDir = selectedStrategy?.replace(/\/[^\/]+\.py$/, "")
+            if (strategyDir) {
+              fetch(`http://127.0.0.1:8000/load-inputs?path=${strategyDir}`)
+                .then((res) => res.json())
+                .then((allPresets) => {
+                  const original = allPresets.find(
+                    (p: any) => p.preset === baseName
+                  )
+                  const file_name = original?.file_name?.value
+                  const symbol = original?.symbol?.value
+                  const timeframe = original?.timeframe?.value
+                  setOriginalPresetValues({ file_name, symbol, timeframe })
+                })
+            }
           }}
         />
       )}
@@ -183,16 +203,15 @@ export default function StrategyInputs({
                 />
               )}
 
-              {(name === "str_name" || name === "strategy") &&
+              {(name === "file_name" || name === "strategy") &&
                 activePresetName && (
                   <div
                     style={{
                       fontSize: "0.85rem",
                       color: "#777",
-                      whiteSpace: "nowrap",
                     }}
                   >
-                    {activePresetName.replace(/^__\d+__/, "")}
+                    {originalPresetValues.file_name}
                   </div>
                 )}
 
@@ -212,7 +231,6 @@ export default function StrategyInputs({
             </div>
           </div>
         ))}
-
       <button onClick={runBacktest}>Run Backtest</button>
     </div>
   )
