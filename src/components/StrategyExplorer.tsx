@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 
 type StrategyNode = {
   name: string
@@ -13,12 +14,29 @@ export default function StrategyExplorer({
 }) {
   const [tree, setTree] = useState<StrategyNode[]>([])
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams() // 🔧
+
+  const [expandedFolders, setExpandedFolders] = useState<string[]>(
+    () => {
+      const initial = searchParams.get("expanded")
+      return initial ? initial.split(",") : []
+    }
+  ) // 🔧
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/list-strategies")
       .then((res) => res.json())
       .then((data) => setTree(data))
   }, [])
+
+  useEffect(() => {
+    // 🔧 Обновляем URL при изменении expandedFolders
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set("expanded", expandedFolders.join(","))
+      return next
+    })
+  }, [expandedFolders, setSearchParams])
 
   return (
     <div
@@ -42,11 +60,15 @@ export default function StrategyExplorer({
           selectedPath={selectedPath}
           onSelect={setSelectedPath}
           onSelectStrategy={onSelectStrategy}
+          expandedFolders={expandedFolders}
+          setExpandedFolders={setExpandedFolders} // 🔧
         />
       ))}
     </div>
   )
 }
+
+
 
 function TreeNode({
   node,
@@ -54,26 +76,38 @@ function TreeNode({
   selectedPath,
   onSelect,
   onSelectStrategy,
+  expandedFolders,
+  setExpandedFolders,
 }: {
   node: StrategyNode
   basePath: string
   selectedPath: string | null
   onSelect: (path: string) => void
   onSelectStrategy: (path: string) => void
+  expandedFolders: string[]
+  setExpandedFolders: (folders: string[]) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
   const path = `${basePath}${node.name}${node.type === "folder" ? "/" : ""}`
+  const isExpanded = expandedFolders.includes(path)
+
+  const toggleExpanded = () => {
+    if (isExpanded) {
+      setExpandedFolders(expandedFolders.filter((p) => p !== path))
+    } else {
+      setExpandedFolders([...expandedFolders, path])
+    }
+  }
 
   if (node.type === "folder") {
     return (
       <div style={{ marginLeft: "1rem" }}>
         <div
           style={{ cursor: "pointer", color: "#0af" }}
-          onClick={() => setExpanded(!expanded)}
+          onClick={toggleExpanded}
         >
-          {expanded ? "📂" : "📁"} {node.name}
+          {isExpanded ? "📂" : "📁"} {node.name}
         </div>
-        {expanded &&
+        {isExpanded &&
           node.children?.map((child) => (
             <TreeNode
               key={child.name}
@@ -81,7 +115,9 @@ function TreeNode({
               basePath={path}
               selectedPath={selectedPath}
               onSelect={onSelect}
-              onSelectStrategy={onSelectStrategy} // ✅ добавляем этот проп
+              onSelectStrategy={onSelectStrategy}
+              expandedFolders={expandedFolders}
+              setExpandedFolders={setExpandedFolders}
             />
           ))}
       </div>
@@ -105,3 +141,4 @@ function TreeNode({
     </div>
   )
 }
+

@@ -5,6 +5,8 @@ import StrategyExplorer from "./StrategyExplorer"
 import { useMarket } from "./MarketContext"
 import { useSearchParams } from "react-router-dom"
 
+// -------------
+
 export default function TabbedPanel() {
   const { symbol, timeframe } = useMarket()
   const [searchParams, setSearchParams] = useSearchParams()
