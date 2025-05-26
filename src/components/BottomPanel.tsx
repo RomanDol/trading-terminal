@@ -64,14 +64,14 @@ export default function BottomPanel() {
       >
         {/* Блок слева: символ и таймфрейм */}
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <span>🔁 {symbol}</span>
+          <span> {symbol}</span>
           <span>⏱ {timeframe}</span>
         </div>
 
         {/* Блок справа: даты */}
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           <span>
-            📅 Начало:{" "}
+            {" "}
             <input
               type="date"
               value={startDate}
@@ -84,7 +84,7 @@ export default function BottomPanel() {
             />
           </span>
           <span>
-            📅 Конец:{" "}
+            {" "}
             <input
               type="date"
               value={endDate}
@@ -102,12 +102,12 @@ export default function BottomPanel() {
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #333" }}>
         <TabButton
-          label="📈 График доходности"
+          label="График доходности"
           active={activeTab === "equity"}
           onClick={() => setActiveTab("equity")}
         />
         <TabButton
-          label="📊 Таблица сделок"
+          label="Таблица сделок"
           active={activeTab === "table"}
           onClick={() => setActiveTab("table")}
         />

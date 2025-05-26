@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 import { useMarket } from "./MarketContext"
+import { useSearchParams } from "react-router-dom"
+
 
 const timeframes = [
   "1m",
@@ -26,6 +28,10 @@ export default function MarketSelector() {
     setSymbol,
     setTimeframe,
   } = useMarket()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+
+
   const [search, setSearch] = useState("")
   const [allSymbols, setAllSymbols] = useState<string[]>([])
 
@@ -71,7 +77,12 @@ export default function MarketSelector() {
         {timeframes.map((tf) => (
           <button
             key={tf}
-            onClick={() => setTimeframe(tf)}
+            onClick={() => {
+              setTimeframe(tf)
+              const params = new URLSearchParams(searchParams)
+              params.set("timeframe", tf)
+              setSearchParams(params)
+            }}
             style={{
               padding: "0.5rem 1rem",
               background: tf === selectedTF ? "#333" : "transparent",
@@ -107,7 +118,12 @@ export default function MarketSelector() {
         {filteredSymbols.map((symbol) => (
           <div
             key={symbol}
-            onClick={() => setSymbol(symbol)}
+            onClick={() => {
+              setSymbol(symbol)
+              const params = new URLSearchParams(searchParams)
+              params.set("symbol", symbol)
+              setSearchParams(params)
+            }}
             style={{
               padding: "0.5rem",
               background: symbol === selectedSymbol ? "#222" : "transparent",

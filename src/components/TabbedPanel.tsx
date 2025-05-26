@@ -1,15 +1,25 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import MarketSelector from "./MarketSelector"
 import StrategyInputs from "./StrategyInputs"
 import StrategyExplorer from "./StrategyExplorer"
 import { useMarket } from "./MarketContext"
+import { useSearchParams } from "react-router-dom"
 
 export default function TabbedPanel() {
-   const { symbol, timeframe } = useMarket()
-  const [activeTab, setActiveTab] = useState<
-    "market" | "strategy" | "strategies"
-  >("market")
-  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null)
+  const { symbol, timeframe } = useMarket()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // === Инициализация состояния из URL ===
+  const initialTab = (searchParams.get("tab") || "market") as
+    | "market"
+    | "strategy"
+    | "strategies"
+  const initialStrategy = searchParams.get("strategy")
+
+  const [activeTab, setActiveTab] = useState<typeof initialTab>(initialTab)
+  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(
+    initialStrategy
+  )
 
   const tabs = [
     { key: "market", label: "Market" },
@@ -17,9 +27,17 @@ export default function TabbedPanel() {
     { key: "strategies", label: "Strategies" },
   ] as const
 
+  // === Обновление URL при переключении вкладки ===
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab)
+    const newParams = new URLSearchParams(searchParams)
+    newParams.set("tab", tab)
+    setSearchParams(newParams)
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Кнопки вкладок как в нижней панели */}
+      {/* Кнопки вкладок */}
       <div
         style={{
           display: "flex",
@@ -32,7 +50,7 @@ export default function TabbedPanel() {
             key={tab.key}
             label={tab.label}
             active={activeTab === tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
           />
         ))}
       </div>
@@ -46,7 +64,12 @@ export default function TabbedPanel() {
           <StrategyExplorer
             onSelectStrategy={async (strategyPath) => {
               setSelectedStrategy(strategyPath)
-              setActiveTab("strategy")
+              handleTabChange("strategy") // переключаем вкладку
+
+              // сохраняем в URL
+              const newParams = new URLSearchParams(searchParams)
+              newParams.set("strategy", strategyPath)
+              setSearchParams(newParams)
 
               const res = await fetch("http://127.0.0.1:8000/run-strategy", {
                 method: "POST",

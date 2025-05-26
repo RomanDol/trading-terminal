@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import PresetControls from "./PresetControls"
 import { usePresetManager } from "./usePresetManager"
 import { replaceWithFreshTempVersion } from "./usePresetManager"
+import { useSearchParams } from "react-router-dom"
+
 
 const API = import.meta.env.VITE_API_URL
 
@@ -15,10 +17,13 @@ export default function PresetSelector({
   currentValues: { [key: string]: any }
   activePresetName?: string | null
   onSelectPreset: (name: string, inputs: any) => void
-}) {
+  }) {
+    const [searchParams, setSearchParams] = useSearchParams()
+    const initialPreset = searchParams.get("preset") || ""
+    
   const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
-  const [selectedPreset, setSelectedPreset] = useState<string>("")
+  const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
   const [newName, setNewName] = useState("")
 
   const { loadPreset, savePreset, deletePreset } = usePresetManager({
@@ -105,14 +110,18 @@ export default function PresetSelector({
 
         if (hasUnsavedChanges) {
           const confirmSave = window.confirm(
-            "Do you want to save changes before switching preset?"
+            "Do you want to save changes in '" + baseName + "' preset?"
           )
-          if (!confirmSave) return
+          if (confirmSave) return
 
           await savePreset(newName, currentValues, presets)
         }
 
-        loadPreset(name, selectedPreset, presets)
+        // Обновляем selectedPreset + URL
+        setSelectedPreset(name)
+        const newParams = new URLSearchParams(searchParams)
+        newParams.set("preset", name)
+        setSearchParams(newParams)
 
         loadPreset(name, selectedPreset, presets)
       }}

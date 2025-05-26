@@ -183,7 +183,7 @@ export default function StrategyInputs({
           </div>
         ))}
 
-      <button onClick={runBacktest}>▶️ Run Backtest</button>
+      <button onClick={runBacktest}>Run Backtest</button>
     </div>
   )
 }

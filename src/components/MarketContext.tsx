@@ -1,5 +1,7 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import type { ReactNode } from "react"
+import { useSearchParams } from "react-router-dom"
+
 
 type MarketContextType = {
   symbol: string
@@ -13,6 +15,16 @@ const MarketContext = createContext<MarketContextType | undefined>(undefined)
 export function MarketProvider({ children }: { children: ReactNode }) {
   const [symbol, setSymbol] = useState("BTCUSDT")
   const [timeframe, setTimeframe] = useState("1m")
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const symbolFromUrl = searchParams.get("symbol")
+    const tfFromUrl = searchParams.get("timeframe")
+
+    if (symbolFromUrl) setSymbol(symbolFromUrl)
+    if (tfFromUrl) setTimeframe(tfFromUrl)
+  }, [])
+
 
   return (
     <MarketContext.Provider
