@@ -132,18 +132,33 @@ export function usePresetManager({
       if (!selected) return
       if (!window.confirm(`Delete preset "${selected}"?`)) return
 
+      const baseName = selected.replace(/^__\d+__/, "")
+
       fetch(`${API}/api/presets/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategyPath, presetName: selected }),
-      }).then(() => {
-        setPresets((prev) => prev.filter((p) => p !== selected))
-        setSelectedPreset("")
-        setNewName("")
       })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            // Удаляем из состояния все версии этого пресета
+            setPresets((prev) =>
+              prev.filter((p) => p !== baseName && !p.endsWith(`__${baseName}`))
+            )
+            setSelectedPreset("")
+            setNewName("")
+          } else {
+            console.error("Ошибка удаления:", data.error)
+          }
+        })
+        .catch((err) => {
+          console.error("Ошибка запроса:", err)
+        })
     },
-    [strategyPath]
+    [strategyPath, setPresets, setSelectedPreset, setNewName]
   )
+  
 
   return {
     loadPreset,
