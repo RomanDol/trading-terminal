@@ -120,24 +120,37 @@ export default function PresetSelector({
         const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
         const newBaseName = newName.replace(/^__\d+__/, "")
 
-        // 1. Удаляем все временные версии старого пресета
-        await replaceWithFreshTempVersion(
-          strategyPath,
-          oldBaseName,
-          currentValues,
-          setPresets
-        )
+        const isRenaming = oldBaseName !== newBaseName
 
-        // 2. Сохраняем основной пресет
-        await savePreset(newName, currentValues, presets)
+        if (isRenaming) {
+          // Сохраняем новый пресет под новым именем (не трогаем старый)
+          await savePreset(newBaseName, currentValues, presets)
 
-        // 3. Создаём новую временную версию с новым именем
-        await replaceWithFreshTempVersion(
-          strategyPath,
-          newBaseName,
-          currentValues,
-          setPresets
-        )
+          // Создаём только новую временную версию
+          await replaceWithFreshTempVersion(
+            strategyPath,
+            newBaseName,
+            currentValues,
+            setPresets
+          )
+
+          // ❌ НЕ нужно затирать старую временную версию!
+        } else {
+          // Стандартное поведение — перезапись текущего
+          await replaceWithFreshTempVersion(
+            strategyPath,
+            oldBaseName,
+            currentValues,
+            setPresets
+          )
+          await savePreset(newBaseName, currentValues, presets)
+          await replaceWithFreshTempVersion(
+            strategyPath,
+            newBaseName,
+            currentValues,
+            setPresets
+          )
+        }
       }}
       onDelete={() => deletePreset(selectedPreset)}
     />

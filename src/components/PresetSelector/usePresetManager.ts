@@ -48,13 +48,15 @@ export function usePresetManager({
 
   const savePreset = useCallback(
     async (name: string, inputs: any, presets: string[]) => {
-      await deleteTempVersions(name)
-
+      if (presets.includes(name)) {
+        await deleteTempVersions(name) // удаляем только если пресет уже есть
+      }
       await fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategyPath, presetName: name, inputs }),
       })
+      
 
       setPresets((prev) => (presets.includes(name) ? prev : [...prev, name]))
       setSelectedPreset(name)
