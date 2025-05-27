@@ -1,4 +1,4 @@
-// StrategyInputs.tsx — улучшенный вариант с передачей полного пресета
+import { useMarket } from "./MarketContext"
 
 import { useEffect, useState } from "react"
 import PresetSelector from "./PresetSelector/PresetSelector"
@@ -21,6 +21,8 @@ export default function StrategyInputs({
     timeframe?: string
     file_name?: string
   }>({})
+  
+  const { symbol, timeframe } = useMarket()
 
   useEffect(() => {
     if (!selectedStrategy) return
@@ -42,7 +44,6 @@ export default function StrategyInputs({
         const originalSymbol = original?.symbol?.value
         const originalTimeframe = original?.timeframe?.value
         const originalFileName = original?.file_name?.value
-
 
         setOriginalPresetValues({
           symbol: originalSymbol,
@@ -71,6 +72,31 @@ export default function StrategyInputs({
         setDefaults({ symbol: data.symbol, timeframe: data.timeframe })
       })
   }, [selectedStrategy])
+
+
+  useEffect(() => {
+    if (!inputs || Object.keys(inputs).length === 0) return
+
+    const updated: { [key: string]: any } = {}
+
+    if (inputs.symbol && symbol !== values["symbol"]) {
+      updated["symbol"] = symbol
+    }
+
+    if (inputs.timeframe && timeframe !== values["timeframe"]) {
+      updated["timeframe"] = timeframe
+    }
+
+    if (Object.keys(updated).length > 0) {
+      setValues((prev: Record<string, any>) => ({
+        ...prev,
+        ...updated,
+      }))
+    }
+  }, [symbol, timeframe])
+  
+  
+  
 
   const updateValue = (name: string, value: string | number) => {
     setValues((prev: { [key: string]: any }) => ({ ...prev, [name]: value }))
@@ -163,7 +189,13 @@ export default function StrategyInputs({
               <input
                 type={typeof field.value === "number" ? "number" : "text"}
                 step={steps[name] ?? 1}
-                value={values[name]}
+                value={
+                  name === "symbol" && symbol !== values["symbol"]
+                    ? symbol
+                    : name === "timeframe" && timeframe !== values["timeframe"]
+                    ? timeframe
+                    : values[name]
+                }
                 onChange={(e) =>
                   updateValue(
                     name,
@@ -231,7 +263,21 @@ export default function StrategyInputs({
             </div>
           </div>
         ))}
-      <button onClick={runBacktest}>Run Backtest</button>
+      <button
+        style={{
+          padding: "0.4rem 1rem",
+          borderRadius: "4px",
+          border: "1px solid #444",
+          cursor: "pointer",
+          transition: "all 0.2s ease-in-out",
+          outline: "none",
+          background: "#030",
+          color: "#0f0",
+        }}
+        onClick={runBacktest}
+      >
+        Run Backtest
+      </button>
     </div>
   )
 }
