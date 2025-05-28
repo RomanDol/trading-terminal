@@ -61,7 +61,6 @@ export default function StrategyInputs({
           symbol: preset.symbol?.value,
           timeframe: preset.timeframe?.value,
         })
-
       })
   }, [presetPath])
 
@@ -87,8 +86,11 @@ export default function StrategyInputs({
   }, [symbol, timeframe])
 
   const updateValue = (name: string, value: string | number) => {
-    setValues((prev: { [key: string]: any }) => ({ ...prev, [name]: value }))
+    const updated = { ...values, [name]: value }
+    setValues(updated)
+    autoRun(updated) // ✅ запускаем стратегию после каждого изменения
   }
+
 
   const runBacktest = async () => {
     if (!presetPath) return
@@ -100,6 +102,17 @@ export default function StrategyInputs({
     const result = await res.json()
     console.log("Backtest result:", result)
   }
+
+  const autoRun = async (updatedInputs: Record<string, any>) => {
+    if (!presetPath) return
+
+    await fetch("http://127.0.0.1:8000/run-strategy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: presetPath, inputs: updatedInputs }),
+    })
+  }
+  
 
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>

@@ -7,11 +7,9 @@ import { useSearchParams } from "react-router-dom"
 import PresetExplorer from "./PresetExplorer"
 
 // -------------
-// -------------
-// -------------
 
 export default function TabbedPanel() {
-  const { symbol, timeframe } = useMarket()
+  // const { symbol, timeframe } = useMarket()
   const [searchParams, setSearchParams] = useSearchParams()
 
   // === Инициализация состояния из URL ===
@@ -67,26 +65,17 @@ export default function TabbedPanel() {
 
         {activeTab === "strategies" && (
           <StrategyExplorer
-            onSelectStrategy={async (strategyPath) => {
-              setPresetPath(strategyPath)
-              handleTabChange("parameters") // переключаем вкладку
+            onSelectStrategy={(strategyPath) => {
+              // setPresetPath(strategyPath)
+              handleTabChange("parameters")
 
               // сохраняем в URL
               const newParams = new URLSearchParams(searchParams)
               newParams.set("parameters", strategyPath)
               setSearchParams(newParams)
 
-              const res = await fetch("http://127.0.0.1:8000/run-strategy", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  path: strategyPath,
-                  symbol,
-                  timeframe,
-                }),
-              })
-              const result = await res.json()
-              console.log("Auto-run result:", result)
+              // Ничего не загружаем и не запускаем!
+              // Стратегия запустится внутри StrategyInputs.tsx, когда появится пресет
             }}
           />
         )}

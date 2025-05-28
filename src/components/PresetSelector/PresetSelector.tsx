@@ -111,43 +111,77 @@ export default function PresetSelector({
           tempVersions.length > 1 || (tempVersions[0] ?? 0) > 0
 
         if (hasUnsavedChanges) {
-          const confirmSave = window.confirm(
-            "Do you want to save changes before switching preset?"
-          )
-          if (!confirmSave) return
+          const confirmSave = window.confirm("Do you want to save changes?")
+          if (confirmSave) return
 
           await savePreset(newName, currentValues, presets)
         }
 
         // Обновляем selectedPreset + URL
         setSelectedPreset(name)
-        // const newParams = new URLSearchParams(searchParams)
-        // newParams.set("preset", name)
-        // setSearchParams(newParams)
 
         loadPreset(name, selectedPreset, presets)
       }}
+      // onSave={async () => {
+      //   const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
+      //   const newBaseName = newName.replace(/^__\d+__/, "")
+
+      //   const isRenaming = oldBaseName !== newBaseName
+
+      //   if (isRenaming) {
+      //     // Сохраняем новый пресет под новым именем (не трогаем старый)
+      //     await savePreset(newBaseName, currentValues, presets)
+
+      //     // Создаём только новую временную версию
+      //     await replaceWithFreshTempVersion(
+      //       strategyPath,
+      //       newBaseName,
+      //       currentValues,
+      //       setPresets
+      //     )
+
+      //     // ❌ НЕ нужно затирать старую временную версию!
+      //   } else {
+      //     // Стандартное поведение — перезапись текущего
+      //     await replaceWithFreshTempVersion(
+      //       strategyPath,
+      //       oldBaseName,
+      //       currentValues,
+      //       setPresets
+      //     )
+      //     await savePreset(newBaseName, currentValues, presets)
+      //     await replaceWithFreshTempVersion(
+      //       strategyPath,
+      //       newBaseName,
+      //       currentValues,
+      //       setPresets
+      //     )
+      //   }
+      // }}
+
       onSave={async () => {
         const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
         const newBaseName = newName.replace(/^__\d+__/, "")
 
         const isRenaming = oldBaseName !== newBaseName
+        const nameExists = presets.includes(newBaseName)
+
+        if (!isRenaming && nameExists) {
+          const confirmed = window.confirm(
+            `Preset "${newBaseName}" already exists. Do you want to overwrite it?`
+          )
+          if (!confirmed) return
+        }
 
         if (isRenaming) {
-          // Сохраняем новый пресет под новым именем (не трогаем старый)
           await savePreset(newBaseName, currentValues, presets)
-
-          // Создаём только новую временную версию
           await replaceWithFreshTempVersion(
             strategyPath,
             newBaseName,
             currentValues,
             setPresets
           )
-
-          // ❌ НЕ нужно затирать старую временную версию!
         } else {
-          // Стандартное поведение — перезапись текущего
           await replaceWithFreshTempVersion(
             strategyPath,
             oldBaseName,
@@ -163,6 +197,7 @@ export default function PresetSelector({
           )
         }
       }}
+      
       onDelete={() => deletePreset(selectedPreset)}
     />
   )
