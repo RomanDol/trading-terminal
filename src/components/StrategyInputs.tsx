@@ -33,20 +33,33 @@ export default function StrategyInputs({
       .then((res) => res.json())
       .then((data) => {
         if (!data.success) return
-        const fields = data.inputs
-        setInputs(fields)
+
+        const presetsObject = data.inputs
+        const entries = Object.entries(presetsObject)
+
+        const [activeName, activePreset] =
+          entries.find(([_, val]: any) => val.isActive) ??
+          entries.find(([key]) => key === "default") ??
+          entries[0] ??
+          []
+
+        if (!activePreset) return
+
+        setActivePresetName(activeName)
+        setInputs(activePreset)
         setValues(
           Object.fromEntries(
-            Object.entries(fields).map(([k, v]: any) => [k, v.value])
+            Object.entries(activePreset).map(([k, v]: any) => [k, v.value])
           )
         )
         setSteps(
           Object.fromEntries(
-            Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
+            Object.entries(activePreset).map(([k, v]: any) => [k, v.step ?? 1])
           )
         )
       })
   }, [presetPath])
+  
   
 
   useEffect(() => {
