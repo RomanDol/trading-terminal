@@ -24,8 +24,6 @@ export default function StrategyInputs({
 
   const { symbol, timeframe } = useMarket()
 
-
-
   useEffect(() => {
     if (!presetPath) return
 
@@ -57,10 +55,15 @@ export default function StrategyInputs({
             Object.entries(activePreset).map(([k, v]: any) => [k, v.step ?? 1])
           )
         )
+        const preset: any = activePreset
+        setOriginalPresetValues({
+          file_name: preset.file_name?.value,
+          symbol: preset.symbol?.value,
+          timeframe: preset.timeframe?.value,
+        })
+
       })
   }, [presetPath])
-  
-  
 
   useEffect(() => {
     if (!inputs || Object.keys(inputs).length === 0) return
@@ -98,8 +101,6 @@ export default function StrategyInputs({
     console.log("Backtest result:", result)
   }
 
-
-
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>
       {presetPath && (
@@ -125,23 +126,11 @@ export default function StrategyInputs({
                 Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
               )
             )
-
-            // Загрузим оригинальный пресет
-            const baseName = name.replace(/^__\d+__/, "")
-            const strategyDir = presetPath?.replace(/\/[^\/]+\.py$/, "")
-            if (strategyDir) {
-              fetch(`http://127.0.0.1:8000/load-inputs?path=${strategyDir}`)
-                .then((res) => res.json())
-                .then((allPresets) => {
-                  const original = allPresets.find(
-                    (p: any) => p.preset === baseName
-                  )
-                  const file_name = original?.file_name?.value
-                  const symbol = original?.symbol?.value
-                  const timeframe = original?.timeframe?.value
-                  setOriginalPresetValues({ file_name, symbol, timeframe })
-                })
-            }
+            setOriginalPresetValues({
+              file_name: fields.file_name?.value,
+              symbol: fields.symbol?.value,
+              timeframe: fields.timeframe?.value,
+            })
           }}
         />
       )}
