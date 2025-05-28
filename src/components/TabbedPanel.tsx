@@ -4,7 +4,10 @@ import StrategyInputs from "./StrategyInputs"
 import StrategyExplorer from "./StrategyExplorer"
 import { useMarket } from "./MarketContext"
 import { useSearchParams } from "react-router-dom"
+import PresetExplorer from "./PresetExplorer"
 
+// -------------
+// -------------
 // -------------
 
 export default function TabbedPanel() {
@@ -14,19 +17,18 @@ export default function TabbedPanel() {
   // === Инициализация состояния из URL ===
   const initialTab = (searchParams.get("tab") || "market") as
     | "market"
-    | "strategy"
+    | "parameters"
     | "strategies"
-  const initialStrategy = searchParams.get("strategy")
-
+    | "presets"
   const [activeTab, setActiveTab] = useState<typeof initialTab>(initialTab)
-  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(
-    initialStrategy
-  )
+  const initialPresetPath = searchParams.get("preset")
+  const [presetPath, setPresetPath] = useState<string | null>(initialPresetPath)
 
   const tabs = [
     { key: "market", label: "Market" },
-    { key: "strategy", label: "Parameters" },
+    { key: "parameters", label: "Parameters" },
     { key: "strategies", label: "Strategies" },
+    { key: "presets", label: "Presets" },
   ] as const
 
   // === Обновление URL при переключении вкладки ===
@@ -59,18 +61,19 @@ export default function TabbedPanel() {
 
       <div style={{ flexGrow: 1, overflow: "hidden" }}>
         {activeTab === "market" && <MarketSelector />}
-        {activeTab === "strategy" && (
-          <StrategyInputs selectedStrategy={selectedStrategy} />
+        {activeTab === "parameters" && (
+          <StrategyInputs presetPath={presetPath} />
         )}
+
         {activeTab === "strategies" && (
           <StrategyExplorer
             onSelectStrategy={async (strategyPath) => {
-              setSelectedStrategy(strategyPath)
-              handleTabChange("strategy") // переключаем вкладку
+              setPresetPath(strategyPath)
+              handleTabChange("parameters") // переключаем вкладку
 
               // сохраняем в URL
               const newParams = new URLSearchParams(searchParams)
-              newParams.set("strategy", strategyPath)
+              newParams.set("parameters", strategyPath)
               setSearchParams(newParams)
 
               const res = await fetch("http://127.0.0.1:8000/run-strategy", {
@@ -84,6 +87,18 @@ export default function TabbedPanel() {
               })
               const result = await res.json()
               console.log("Auto-run result:", result)
+            }}
+          />
+        )}
+        {activeTab === "presets" && (
+          <PresetExplorer
+            onSelectPreset={(presetPath) => {
+              setPresetPath(presetPath)
+              handleTabChange("parameters")
+              const newParams = new URLSearchParams(searchParams)
+              newParams.set("preset", presetPath)
+              newParams.set("tab", "parameters")
+              setSearchParams(newParams)
             }}
           />
         )}

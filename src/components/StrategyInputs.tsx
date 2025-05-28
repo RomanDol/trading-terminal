@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import PresetSelector from "./PresetSelector/PresetSelector"
 
 export default function StrategyInputs({
-  selectedStrategy,
+  presetPath,
 }: {
-  selectedStrategy: string | null
+  presetPath: string | null
 }) {
   const [activePresetName, setActivePresetName] = useState<string | null>(null)
   const [inputs, setInputs] = useState<any>({}) // весь пресет
@@ -21,38 +21,19 @@ export default function StrategyInputs({
     timeframe?: string
     file_name?: string
   }>({})
-  
+
   const { symbol, timeframe } = useMarket()
 
+
+
   useEffect(() => {
-    if (!selectedStrategy) return
+    if (!presetPath) return
 
-    const strategyDir = selectedStrategy.replace(/\/[^\/]+\.py$/, "")
-
-    fetch(`http://127.0.0.1:8000/load-inputs?path=${strategyDir}`)
+    fetch(`http://127.0.0.1:8000/api/presets/load-file?path=${presetPath}`)
       .then((res) => res.json())
       .then((data) => {
-        const preset =
-          data.find((p: any) => p.isActive) ??
-          data.find((p: any) => p.preset === "default")
-
-        if (!preset) return
-
-        const baseName = preset.preset.replace(/^__\d+__/, "")
-        const original = data.find((p: any) => p.preset === baseName)
-
-        const originalSymbol = original?.symbol?.value
-        const originalTimeframe = original?.timeframe?.value
-        const originalFileName = original?.file_name?.value
-
-        setOriginalPresetValues({
-          symbol: originalSymbol,
-          timeframe: originalTimeframe,
-          file_name: originalFileName,
-        })
-
-        const { preset: _, ...fields } = preset
-        setActivePresetName(preset.preset)
+        if (!data.success) return
+        const fields = data.inputs
         setInputs(fields)
         setValues(
           Object.fromEntries(
@@ -65,14 +46,8 @@ export default function StrategyInputs({
           )
         )
       })
-
-    fetch(`http://127.0.0.1:8000/load-strategy-meta?path=${strategyDir}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setDefaults({ symbol: data.symbol, timeframe: data.timeframe })
-      })
-  }, [selectedStrategy])
-
+  }, [presetPath])
+  
 
   useEffect(() => {
     if (!inputs || Object.keys(inputs).length === 0) return
@@ -94,45 +69,29 @@ export default function StrategyInputs({
       }))
     }
   }, [symbol, timeframe])
-  
-  
-  
 
   const updateValue = (name: string, value: string | number) => {
     setValues((prev: { [key: string]: any }) => ({ ...prev, [name]: value }))
   }
 
   const runBacktest = async () => {
-    if (!selectedStrategy) return
+    if (!presetPath) return
     const res = await fetch("http://127.0.0.1:8000/run-strategy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: selectedStrategy, inputs: values }),
+      body: JSON.stringify({ path: presetPath, inputs: values }),
     })
     const result = await res.json()
     console.log("Backtest result:", result)
   }
 
-  // const handlePresetLoad = (preset: any) => {
-  //   const { preset: _, ...fields } = preset
-  //   setInputs(fields)
-  //   setValues(
-  //     Object.fromEntries(
-  //       Object.entries(fields).map(([k, v]: any) => [k, v.value])
-  //     )
-  //   )
-  //   setSteps(
-  //     Object.fromEntries(
-  //       Object.entries(fields).map(([k, v]: any) => [k, v.step ?? 1])
-  //     )
-  //   )
-  // }
+
 
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>
-      {selectedStrategy && (
+      {presetPath && (
         <PresetSelector
-          strategyPath={selectedStrategy.replace(/\/[^\/]+\.py$/, "")}
+          strategyPath={presetPath.replace(/\/[^\/]+\.py$/, "")}
           currentValues={Object.fromEntries(
             Object.entries(values).map(([k, v]) => [
               k,
@@ -156,7 +115,7 @@ export default function StrategyInputs({
 
             // Загрузим оригинальный пресет
             const baseName = name.replace(/^__\d+__/, "")
-            const strategyDir = selectedStrategy?.replace(/\/[^\/]+\.py$/, "")
+            const strategyDir = presetPath?.replace(/\/[^\/]+\.py$/, "")
             if (strategyDir) {
               fetch(`http://127.0.0.1:8000/load-inputs?path=${strategyDir}`)
                 .then((res) => res.json())
