@@ -9,6 +9,8 @@ import PresetExplorer from "./PresetExplorer"
 // -------------
 
 export default function TabbedPanel() {
+  const [strategyPath, setStrategyPath] = useState<string | null>(null)
+
   // const { symbol, timeframe } = useMarket()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -60,22 +62,18 @@ export default function TabbedPanel() {
       <div style={{ flexGrow: 1, overflow: "hidden" }}>
         {activeTab === "market" && <MarketSelector />}
         {activeTab === "parameters" && (
-          <StrategyInputs presetPath={presetPath} />
+          <StrategyInputs presetPath={presetPath} strategyPath={strategyPath} />
         )}
 
         {activeTab === "strategies" && (
           <StrategyExplorer
             onSelectStrategy={(strategyPath) => {
-              // setPresetPath(strategyPath)
+              setStrategyPath(strategyPath) // ✅ сохраняем путь к .py
               handleTabChange("parameters")
 
-              // сохраняем в URL
               const newParams = new URLSearchParams(searchParams)
               newParams.set("parameters", strategyPath)
               setSearchParams(newParams)
-
-              // Ничего не загружаем и не запускаем!
-              // Стратегия запустится внутри StrategyInputs.tsx, когда появится пресет
             }}
           />
         )}

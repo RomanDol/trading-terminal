@@ -1,4 +1,5 @@
 import { useCallback } from "react"
+import { cleanPresetInputs } from "../../utils/cleanInputs"
 
 const API = import.meta.env.VITE_API_URL
 
@@ -56,7 +57,6 @@ export function usePresetManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategyPath, presetName: name, inputs }),
       })
-      
 
       setPresets((prev) => (presets.includes(name) ? prev : [...prev, name]))
       setSelectedPreset(name)
@@ -103,6 +103,14 @@ export function usePresetManager({
         prev.includes(autoName) ? prev : [...prev, autoName]
       )
       onSelectPreset(autoName, data.inputs)
+
+      // ----------------------
+      const cleanedInputs = cleanPresetInputs(data.inputs)
+      console.log("run strategy - select preset")
+      // console.log(data.inputs)
+      console.log(cleanedInputs)
+
+      // ----------------------
 
       await fetch(`${API}/api/presets/save`, {
         method: "POST",
@@ -160,7 +168,6 @@ export function usePresetManager({
     },
     [strategyPath, setPresets, setSelectedPreset, setNewName]
   )
-  
 
   return {
     loadPreset,
@@ -187,12 +194,9 @@ export async function replaceWithFreshTempVersion(
   const existingListData = await existingListRes.json()
   const existingPresets = new Set<string>(existingListData.presets ?? [])
 
-  
-
   const tempNames = Array.from(existingPresets).filter((p: string) =>
     /^__\d+__/.test(p)
   )
-
 
   for (const name of tempNames) {
     if (!existingPresets.has(name)) continue // безопасная проверка

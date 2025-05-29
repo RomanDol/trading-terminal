@@ -3,7 +3,7 @@ import PresetControls from "./PresetControls"
 import { usePresetManager } from "./usePresetManager"
 import { replaceWithFreshTempVersion } from "./usePresetManager"
 import { useSearchParams } from "react-router-dom"
-
+import { cleanPresetInputs } from "../../utils/cleanInputs"
 
 const API = import.meta.env.VITE_API_URL
 
@@ -17,10 +17,10 @@ export default function PresetSelector({
   currentValues: { [key: string]: any }
   activePresetName?: string | null
   onSelectPreset: (name: string, inputs: any) => void
-  }) {
-    const [searchParams, setSearchParams] = useSearchParams()
-    // const initialPreset = searchParams.get("preset") || ""
-    
+}) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  // const initialPreset = searchParams.get("preset") || ""
+
   const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
   // const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
@@ -70,6 +70,13 @@ export default function PresetSelector({
       .filter((p) => p.startsWith("__") && p.endsWith(`__${baseName}`))
       .map((p) => parseInt(p.split("__")[1]))
       .filter((n) => !isNaN(n))
+    // ______________
+    const cleanedInputs = cleanPresetInputs(updatedInputs)
+    console.log("run strategy - change input")
+
+    // console.log(updatedInputs)
+    console.log(cleanedInputs)
+    // ______________
 
     const nextVersion =
       tempVersions.length > 0 ? Math.max(...tempVersions) + 1 : 1
@@ -88,6 +95,19 @@ export default function PresetSelector({
         if (!presets.includes(tempName)) {
           setPresets((prev) => [...prev, tempName])
         }
+
+        // 🟢 Запуск стратегии с теми же данными
+        fetch("http://127.0.0.1:8000/run-strategy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: strategyPath,
+            inputs: updatedInputs,
+          }),
+        }).then(() => {
+          // 🔄 Обновим таблицу
+          window.dispatchEvent(new CustomEvent("refresh-trades"))
+        })
       })
     }, 1000)
 
@@ -122,43 +142,6 @@ export default function PresetSelector({
 
         loadPreset(name, selectedPreset, presets)
       }}
-      // onSave={async () => {
-      //   const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
-      //   const newBaseName = newName.replace(/^__\d+__/, "")
-
-      //   const isRenaming = oldBaseName !== newBaseName
-
-      //   if (isRenaming) {
-      //     // Сохраняем новый пресет под новым именем (не трогаем старый)
-      //     await savePreset(newBaseName, currentValues, presets)
-
-      //     // Создаём только новую временную версию
-      //     await replaceWithFreshTempVersion(
-      //       strategyPath,
-      //       newBaseName,
-      //       currentValues,
-      //       setPresets
-      //     )
-
-      //     // ❌ НЕ нужно затирать старую временную версию!
-      //   } else {
-      //     // Стандартное поведение — перезапись текущего
-      //     await replaceWithFreshTempVersion(
-      //       strategyPath,
-      //       oldBaseName,
-      //       currentValues,
-      //       setPresets
-      //     )
-      //     await savePreset(newBaseName, currentValues, presets)
-      //     await replaceWithFreshTempVersion(
-      //       strategyPath,
-      //       newBaseName,
-      //       currentValues,
-      //       setPresets
-      //     )
-      //   }
-      // }}
-
       onSave={async () => {
         const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
         const newBaseName = newName.replace(/^__\d+__/, "")
@@ -197,7 +180,6 @@ export default function PresetSelector({
           )
         }
       }}
-      
       onDelete={() => deletePreset(selectedPreset)}
     />
   )

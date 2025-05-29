@@ -37,13 +37,24 @@ export default function BottomPanel() {
   const [endDate, setEndDate] = useState(defaultEnd)
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/equity")
-      .then((res) => res.json())
-      .then((data) => setEquity(data))
+    const loadData = () => {
+      fetch("http://127.0.0.1:8000/equity")
+        .then((res) => res.json())
+        .then((data) => setEquity(data))
 
-    fetch("http://127.0.0.1:8000/trades")
-      .then((res) => res.json())
-      .then((data) => setTrades(data))
+      fetch("http://127.0.0.1:8000/trades")
+        .then((res) => res.json())
+        .then((data) => setTrades(data))
+    }
+
+    loadData()
+
+    const handler = () => loadData()
+    window.addEventListener("refresh-trades", handler)
+
+    return () => {
+      window.removeEventListener("refresh-trades", handler)
+    }
   }, [])
 
   return (
@@ -102,14 +113,14 @@ export default function BottomPanel() {
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #333" }}>
         <TabButton
-          label="График доходности"
-          active={activeTab === "equity"}
-          onClick={() => setActiveTab("equity")}
-        />
-        <TabButton
           label="Таблица сделок"
           active={activeTab === "table"}
           onClick={() => setActiveTab("table")}
+        />
+        <TabButton
+          label="График доходности"
+          active={activeTab === "equity"}
+          onClick={() => setActiveTab("equity")}
         />
       </div>
 

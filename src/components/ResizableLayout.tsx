@@ -12,7 +12,7 @@ export default function ResizableLayout() {
       direction: "vertical",
       sizes: [70, 30],
       minSize: [200, 100],
-      gutterSize: 6,
+      gutterSize: 4,
       cursor: "row-resize",
     })
 
@@ -20,7 +20,7 @@ export default function ResizableLayout() {
     Split(["#left", "#right"], {
       sizes: [75, 25],
       minSize: 200,
-      gutterSize: 6,
+      gutterSize: 4,
       cursor: "col-resize",
     })
   }, [])
@@ -61,7 +61,7 @@ export default function ResizableLayout() {
         <div
           id="bottom"
           style={{
-            height: "30%",
+            minHeight: "60%",
             background: "#1a1a1a",
             color: "#ccc",
             overflow: "hidden",

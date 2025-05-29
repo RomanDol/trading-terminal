@@ -1,13 +1,21 @@
 import { useMarket } from "./MarketContext"
+import { replaceWithFreshTempVersion } from "./PresetSelector/usePresetManager"
+import { cleanPresetInputs } from "../utils/cleanInputs"
 
 import { useEffect, useState } from "react"
 import PresetSelector from "./PresetSelector/PresetSelector"
 
 export default function StrategyInputs({
   presetPath,
+  strategyPath,
 }: {
   presetPath: string | null
+  strategyPath: string | null
 }) {
+  const emitRefreshTrades = () => {
+    window.dispatchEvent(new CustomEvent("refresh-trades"))
+  }
+
   const [activePresetName, setActivePresetName] = useState<string | null>(null)
   const [inputs, setInputs] = useState<any>({}) // весь пресет
   const [values, setValues] = useState<any>({}) // просто name → value
@@ -29,7 +37,7 @@ export default function StrategyInputs({
 
     fetch(`http://127.0.0.1:8000/api/presets/load-file?path=${presetPath}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         if (!data.success) return
 
         const presetsObject = data.inputs
@@ -50,6 +58,7 @@ export default function StrategyInputs({
             Object.entries(activePreset).map(([k, v]: any) => [k, v.value])
           )
         )
+
         setSteps(
           Object.fromEntries(
             Object.entries(activePreset).map(([k, v]: any) => [k, v.step ?? 1])
@@ -61,6 +70,21 @@ export default function StrategyInputs({
           symbol: preset.symbol?.value,
           timeframe: preset.timeframe?.value,
         })
+
+        const baseName = activeName.replace(/^__\d+__/, "")
+        await replaceWithFreshTempVersion(
+          presetPath,
+          baseName,
+          activePreset,
+          () => {} // пустая setPresets, если нет нужды обновлять
+        )
+
+        // ------------
+        const cleanedInputs = cleanPresetInputs(activePreset)
+        console.log("run strategy - load/reload preset")
+        console.log(cleanedInputs)
+        // ------------
+        
       })
   }, [presetPath])
 
@@ -91,28 +115,28 @@ export default function StrategyInputs({
     autoRun(updated) // ✅ запускаем стратегию после каждого изменения
   }
 
-
   const runBacktest = async () => {
-    if (!presetPath) return
+    if (!strategyPath) return
     const res = await fetch("http://127.0.0.1:8000/run-strategy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: presetPath, inputs: values }),
+      body: JSON.stringify({ path: strategyPath, inputs: values }),
     })
     const result = await res.json()
     console.log("Backtest result:", result)
+    emitRefreshTrades()
   }
 
   const autoRun = async (updatedInputs: Record<string, any>) => {
-    if (!presetPath) return
+    if (!strategyPath) return
 
     await fetch("http://127.0.0.1:8000/run-strategy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: presetPath, inputs: updatedInputs }),
+      body: JSON.stringify({ path: strategyPath, inputs: updatedInputs }),
     })
+    emitRefreshTrades()
   }
-  
 
   return (
     <div style={{ padding: "1rem", color: "#ccc" }}>
