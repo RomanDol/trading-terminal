@@ -8,12 +8,12 @@ import { cleanPresetInputs } from "../../utils/cleanInputs"
 const API = import.meta.env.VITE_API_URL
 
 export default function PresetSelector({
-  strategyPath,
+  presetPath,
   currentValues,
   activePresetName,
   onSelectPreset,
 }: {
-  strategyPath: string
+  presetPath: string
   currentValues: { [key: string]: any }
   activePresetName?: string | null
   onSelectPreset: (name: string, inputs: any) => void
@@ -29,7 +29,7 @@ export default function PresetSelector({
   const [selectedPreset, setSelectedPreset] = useState<string>("")
 
   const { loadPreset, savePreset, deletePreset } = usePresetManager({
-    strategyPath,
+    presetPath,
     onSelectPreset,
     setPresets,
     setSelectedPreset,
@@ -43,11 +43,11 @@ export default function PresetSelector({
     fetch(`${API}/api/presets/list`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ strategyPath }),
+      body: JSON.stringify({ presetPath }),
     })
       .then((res) => res.json())
       .then((data) => setPresets(data.presets ?? []))
-  }, [strategyPath])
+  }, [presetPath])
 
   // При инициализации — сбрасываем selected и имя
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function PresetSelector({
 
   // Автосохранение временных версий
   useEffect(() => {
-    if (!strategyPath || !selectedPreset || !currentValues || isLoadingPreset)
+    if (!presetPath || !selectedPreset || !currentValues || isLoadingPreset)
       return
 
     const baseName = selectedPreset.replace(/^__\d+__/, "")
@@ -87,7 +87,7 @@ export default function PresetSelector({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          strategyPath,
+          presetPath,
           presetName: tempName,
           inputs: updatedInputs,
         }),
@@ -101,7 +101,7 @@ export default function PresetSelector({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            path: strategyPath,
+            path: presetPath,
             inputs: updatedInputs,
           }),
         }).then(() => {
@@ -159,21 +159,21 @@ export default function PresetSelector({
         if (isRenaming) {
           await savePreset(newBaseName, currentValues, presets)
           await replaceWithFreshTempVersion(
-            strategyPath,
+            presetPath,
             newBaseName,
             currentValues,
             setPresets
           )
         } else {
           await replaceWithFreshTempVersion(
-            strategyPath,
+            presetPath,
             oldBaseName,
             currentValues,
             setPresets
           )
           await savePreset(newBaseName, currentValues, presets)
           await replaceWithFreshTempVersion(
-            strategyPath,
+            presetPath,
             newBaseName,
             currentValues,
             setPresets

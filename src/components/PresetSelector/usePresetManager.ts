@@ -4,7 +4,7 @@ import { cleanPresetInputs } from "../../utils/cleanInputs"
 const API = import.meta.env.VITE_API_URL
 
 export function usePresetManager({
-  strategyPath,
+  presetPath,
   onSelectPreset,
   setPresets,
   setSelectedPreset,
@@ -12,7 +12,7 @@ export function usePresetManager({
   setVersion,
   setIsLoadingPreset,
 }: {
-  strategyPath: string
+  presetPath: string
   onSelectPreset: (name: string, inputs: any) => void
   setPresets: React.Dispatch<React.SetStateAction<string[]>>
   setSelectedPreset: React.Dispatch<React.SetStateAction<string>>
@@ -25,7 +25,7 @@ export function usePresetManager({
       const res = await fetch(`${API}/api/presets/list`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyPath }),
+        body: JSON.stringify({ presetPath }),
       })
       const data = await res.json()
       const allPresets: string[] = data.presets ?? []
@@ -39,12 +39,12 @@ export function usePresetManager({
           fetch(`${API}/api/presets/delete`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ strategyPath, presetName }),
+            body: JSON.stringify({ presetPath, presetName }),
           })
         )
       )
     },
-    [strategyPath]
+    [presetPath]
   )
 
   const savePreset = useCallback(
@@ -55,13 +55,13 @@ export function usePresetManager({
       await fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyPath, presetName: name, inputs }),
+        body: JSON.stringify({ presetPath, presetName: name, inputs }),
       })
 
       setPresets((prev) => (presets.includes(name) ? prev : [...prev, name]))
       setSelectedPreset(name)
     },
-    [strategyPath, deleteTempVersions]
+    [presetPath, deleteTempVersions]
   )
 
   const loadPreset = useCallback(
@@ -91,7 +91,7 @@ export function usePresetManager({
       const res = await fetch(`${API}/api/presets/load`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyPath, presetName: name }),
+        body: JSON.stringify({ presetPath, presetName: name }),
       })
       const data = await res.json()
       if (!data.success) return
@@ -116,7 +116,7 @@ export function usePresetManager({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          strategyPath,
+          presetPath,
           presetName: autoName,
           inputs: { ...data.inputs, isActive: true },
         }),
@@ -134,7 +134,7 @@ export function usePresetManager({
       setVersion(nextVersion)
       setIsLoadingPreset?.(false)
     },
-    [strategyPath, deleteTempVersions]
+    [presetPath, deleteTempVersions]
   )
 
   const deletePreset = useCallback(
@@ -147,7 +147,7 @@ export function usePresetManager({
       fetch(`${API}/api/presets/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyPath, presetName: selected }),
+        body: JSON.stringify({ presetPath, presetName: selected }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -166,7 +166,7 @@ export function usePresetManager({
           console.error("Ошибка запроса:", err)
         })
     },
-    [strategyPath, setPresets, setSelectedPreset, setNewName]
+    [presetPath, setPresets, setSelectedPreset, setNewName]
   )
 
   return {
@@ -178,7 +178,7 @@ export function usePresetManager({
 }
 
 export async function replaceWithFreshTempVersion(
-  strategyPath: string,
+  presetPath: string,
   baseName: string,
   inputs: any,
   setPresets: (p: string[]) => void
@@ -189,7 +189,7 @@ export async function replaceWithFreshTempVersion(
   const existingListRes = await fetch(`${API}/api/presets/list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ strategyPath }),
+    body: JSON.stringify({ presetPath }),
   })
   const existingListData = await existingListRes.json()
   const existingPresets = new Set<string>(existingListData.presets ?? [])
@@ -204,7 +204,7 @@ export async function replaceWithFreshTempVersion(
     const res = await fetch(`${API}/api/presets/delete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ strategyPath, presetName: name }),
+      body: JSON.stringify({ presetPath, presetName: name }),
     })
 
     const result = await res.json()
@@ -221,7 +221,7 @@ export async function replaceWithFreshTempVersion(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      strategyPath,
+      presetPath,
       presetName: tempName,
       inputs: inputsCopy,
     }),
@@ -231,7 +231,7 @@ export async function replaceWithFreshTempVersion(
   const newList = await fetch(`${API}/api/presets/list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ strategyPath }),
+    body: JSON.stringify({ presetPath }),
   })
   const data = await newList.json()
   setPresets(data.presets ?? [])

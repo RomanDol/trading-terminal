@@ -84,7 +84,7 @@ export default function StrategyInputs({
         console.log("run strategy - load/reload preset")
         console.log(cleanedInputs)
         // ------------
-        
+
       })
   }, [presetPath])
 
@@ -142,7 +142,7 @@ export default function StrategyInputs({
     <div style={{ padding: "1rem", color: "#ccc" }}>
       {presetPath && (
         <PresetSelector
-          strategyPath={presetPath.replace(/\/[^\/]+\.py$/, "")}
+          presetPath={presetPath.replace(/\/[^\/]+\.py$/, "")}
           currentValues={Object.fromEntries(
             Object.entries(values).map(([k, v]) => [
               k,
