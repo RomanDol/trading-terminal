@@ -96,18 +96,7 @@ export default function PresetSelector({
           setPresets((prev) => [...prev, tempName])
         }
 
-        // 🟢 Запуск стратегии с теми же данными
-        fetch("http://127.0.0.1:8000/run-strategy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            path: presetPath,
-            inputs: updatedInputs,
-          }),
-        }).then(() => {
-          // 🔄 Обновим таблицу
-          window.dispatchEvent(new CustomEvent("refresh-trades"))
-        })
+
       })
     }, 1000)
 
