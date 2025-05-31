@@ -30,63 +30,6 @@ export default function StrategyInputs({
 
   const { symbol, timeframe } = useMarket()
 
-  // useEffect(() => {
-  //   console.log("[🟢 useEffect] presetPath изменился:", presetPath)
-  //   if (!presetPath) return
-
-  //   fetch(`http://127.0.0.1:8000/api/presets/load-file?path=${presetPath}`)
-  //     .then((res) => res.json())
-  //     .then(async (data) => {
-  //       if (!data.success) return
-
-  //       const presetsObject = data.inputs
-  //       const entries = Object.entries(presetsObject)
-
-  //       const [activeName, activePreset] =
-  //         entries.find(([_, val]: any) => val.isActive) ??
-  //         entries.find(([key]) => key === "default") ??
-  //         entries[0] ??
-  //         []
-
-  //       if (!activePreset) return
-
-  //       setActivePresetName(activeName)
-  //       setInputs(activePreset)
-  //       setValues(
-  //         Object.fromEntries(
-  //           Object.entries(activePreset).map(([k, v]: any) => [k, v.value])
-  //         )
-  //       )
-
-  //       setSteps(
-  //         Object.fromEntries(
-  //           Object.entries(activePreset).map(([k, v]: any) => [k, v.step ?? 1])
-  //         )
-  //       )
-  //       const preset: any = activePreset
-  //       setOriginalPresetValues({
-  //         file_name: preset.file_name?.value,
-  //         symbol: preset.symbol?.value,
-  //         timeframe: preset.timeframe?.value,
-  //       })
-
-  //       const baseName = activeName.replace(/^__\d+__/, "")
-  //       await replaceWithFreshTempVersion(
-  //         presetPath,
-  //         baseName,
-  //         activePreset,
-  //         () => {} // пустая setPresets, если нет нужды обновлять
-  //       )
-
-  //       // ------------
-  //       const cleanedInputs = cleanPresetInputs(activePreset)
-  //       console.log("run strategy - load/reload preset")
-  //       console.log(cleanedInputs)
-  //       // ------------
-
-  //     })
-  // }, [presetPath])
-
   useEffect(() => {
     if (!presetPath) return
 

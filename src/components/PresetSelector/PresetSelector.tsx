@@ -95,8 +95,6 @@ export default function PresetSelector({
         if (!presets.includes(tempName)) {
           setPresets((prev) => [...prev, tempName])
         }
-
-
       })
     }, 1000)
 

@@ -1,8 +1,9 @@
 import { useCallback } from "react"
 import { cleanPresetInputs } from "../../utils/cleanInputs"
+import { useMarket } from "../MarketContext" // Добавляем импорт
 
 const API = import.meta.env.VITE_API_URL
-
+// -------
 export function usePresetManager({
   presetPath,
   onSelectPreset,
@@ -20,6 +21,7 @@ export function usePresetManager({
   setVersion: React.Dispatch<React.SetStateAction<number>>
   setIsLoadingPreset?: (value: boolean) => void
 }) {
+  const marketContext = useMarket() // Получаем контекст целиком
   const deleteTempVersions = useCallback(
     async (base: string) => {
       const res = await fetch(`${API}/api/presets/list`, {
@@ -65,7 +67,12 @@ export function usePresetManager({
   )
 
   const loadPreset = useCallback(
-    async (name: string, current: string, presets: string[]) => {
+    async (
+      name: string,
+      current: string,
+      presets: string[],
+      currentMarketContext?: { symbol: string; timeframe: string }
+    ) => {
       setIsLoadingPreset?.(true)
       const prevBase = current.replace(/^__\d+__/, "")
       const newBase = name.replace(/^__\d+__/, "")
@@ -96,29 +103,49 @@ export function usePresetManager({
       const data = await res.json()
       if (!data.success) return
 
+      // Создаем копию загруженных данных
+      const loadedInputs = { ...data.inputs }
+
+      // Если переданы актуальные значения из контекста, обновляем их
+      if (currentMarketContext) {
+        if (loadedInputs.symbol) {
+          loadedInputs.symbol = {
+            ...loadedInputs.symbol,
+            value: currentMarketContext.symbol,
+          }
+        }
+        if (loadedInputs.timeframe) {
+          loadedInputs.timeframe = {
+            ...loadedInputs.timeframe,
+            value: currentMarketContext.timeframe,
+          }
+        }
+      }
+
       const autoName = `__0__${newBase}`
       setSelectedPreset(autoName)
       setNewName(newBase)
       setPresets((prev) =>
         prev.includes(autoName) ? prev : [...prev, autoName]
       )
-      onSelectPreset(autoName, data.inputs)
+
+      // Передаем обновленные данные в onSelectPreset
+      onSelectPreset(autoName, loadedInputs)
 
       // ----------------------
-      const cleanedInputs = cleanPresetInputs(data.inputs)
+      const cleanedInputs = cleanPresetInputs(loadedInputs)
       console.log("run strategy - select preset")
-      // console.log(data.inputs)
       console.log(cleanedInputs)
-
       // ----------------------
 
+      // Сохраняем __0__ версию с актуальными значениями из контекста
       await fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           presetPath,
           presetName: autoName,
-          inputs: { ...data.inputs, isActive: true },
+          inputs: { ...loadedInputs, isActive: true },
         }),
       })
 
@@ -170,7 +197,12 @@ export function usePresetManager({
   )
 
   return {
-    loadPreset,
+    loadPreset: (
+      name: string,
+      current: string,
+      presets: string[],
+      currentMarketContext?: { symbol: string; timeframe: string }
+    ) => loadPreset(name, current, presets, currentMarketContext),
     savePreset,
     deletePreset,
     deleteTempVersions,
