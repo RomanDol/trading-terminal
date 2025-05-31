@@ -9,21 +9,24 @@ import PresetExplorer from "./PresetExplorer"
 // -------------
 
 export default function TabbedPanel() {
-  const [strategyPath, setStrategyPath] = useState<string | null>(null)
-
+  
   // const { symbol, timeframe } = useMarket()
   const [searchParams, setSearchParams] = useSearchParams()
-
+  
   // === Инициализация состояния из URL ===
   const initialTab = (searchParams.get("tab") || "market") as
-    | "market"
-    | "parameters"
-    | "strategies"
-    | "presets"
+  | "market"
+  | "parameters"
+  | "strategies"
+  | "presets"
   const [activeTab, setActiveTab] = useState<typeof initialTab>(initialTab)
   const initialPresetPath = searchParams.get("preset")
   const [presetPath, setPresetPath] = useState<string | null>(initialPresetPath)
-
+  const initialStrategyPath = searchParams.get("strategy")
+  const [strategyPath, setStrategyPath] = useState<string | null>(
+    initialStrategyPath
+  )
+  
   const tabs = [
     { key: "market", label: "Market" },
     { key: "parameters", label: "Parameters" },
@@ -72,7 +75,7 @@ export default function TabbedPanel() {
               handleTabChange("parameters")
 
               const newParams = new URLSearchParams(searchParams)
-              newParams.set("parameters", strategyPath)
+              newParams.set("strategy", strategyPath) // 🔧 исправил с "parameters" на "strategy"
               setSearchParams(newParams)
             }}
           />

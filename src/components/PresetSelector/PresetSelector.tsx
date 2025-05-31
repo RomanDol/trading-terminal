@@ -5,6 +5,7 @@ import { replaceWithFreshTempVersion } from "./usePresetManager"
 import { useSearchParams } from "react-router-dom"
 import { cleanPresetInputs } from "../../utils/cleanInputs"
 import { useMarket } from "../MarketContext"
+import { runBacktest, runBacktestSimple } from "../../utils/backtest"
 
 const API = import.meta.env.VITE_API_URL
 
@@ -13,15 +14,17 @@ export default function PresetSelector({
   currentValues,
   activePresetName,
   onSelectPreset,
+  strategyPath
 }: {
   presetPath: string
   currentValues: { [key: string]: any }
   activePresetName?: string | null
   onSelectPreset: (name: string, inputs: any) => void
+  strategyPath: string | null
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
   // const initialPreset = searchParams.get("preset") || ""
-  const { symbol, timeframe } = useMarket()  
+  const { symbol, timeframe } = useMarket()
   const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
   // const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
@@ -73,10 +76,16 @@ export default function PresetSelector({
       .filter((n) => !isNaN(n))
     // ______________
     const cleanedInputs = cleanPresetInputs(updatedInputs)
-    console.log("run strategy - change input")
+    console.log("run strategy from PresetSelector.tsx - change input")
 
-    // console.log(updatedInputs)
-    console.log(cleanedInputs)
+    // console.log(cleanedInputs)
+
+    if (strategyPath) {
+    
+      Promise.resolve().then(() =>
+        runBacktestSimple(strategyPath, cleanedInputs)
+      )
+    }
     // ______________
 
     const nextVersion =
@@ -131,21 +140,20 @@ export default function PresetSelector({
 
         loadPreset(name, selectedPreset, presets, symbol, timeframe)
       }}
-      
       onSave={async () => {
         const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
         const newBaseName = newName.replace(/^__\d+__/, "")
 
         const isRenaming = oldBaseName !== newBaseName
         const nameExists = presets.includes(newBaseName)
-        
+
         if (!isRenaming && nameExists) {
           const confirmed = window.confirm(
             `Preset "${newBaseName}" already exists. Do you want to overwrite it?`
           )
           if (!confirmed) return
         }
-        
+
         if (isRenaming) {
           await savePreset(newBaseName, currentValues, presets)
           await replaceWithFreshTempVersion(

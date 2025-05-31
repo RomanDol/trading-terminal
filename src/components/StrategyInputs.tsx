@@ -4,7 +4,7 @@ import { cleanPresetInputs } from "../utils/cleanInputs"
 import { useRef } from "react"
 import { useEffect, useState } from "react"
 import PresetSelector from "./PresetSelector/PresetSelector"
-
+import { runBacktest, runBacktestSimple } from "../utils/backtest"
 
 export default function StrategyInputs({
   presetPath,
@@ -12,7 +12,7 @@ export default function StrategyInputs({
 }: {
   presetPath: string | null
   strategyPath: string | null
-   }) {
+}) {
   const emitRefreshTrades = () => {
     window.dispatchEvent(new CustomEvent("refresh-trades"))
   }
@@ -81,15 +81,22 @@ export default function StrategyInputs({
         await replaceWithFreshTempVersion(
           presetPath,
           baseName,
-           activePreset,
-           () => {},
-           symbol,
-           timeframe
-         )
+          activePreset,
+          () => {},
+          symbol,
+          timeframe
+        )
 
         const cleanedInputs = cleanPresetInputs(activePreset)
-        console.log("run strategy - load/reload preset")
-        console.log(cleanedInputs)
+        console.log("run strategy from StrategyInputs.tsx - load/reload preset")
+        if (strategyPath) {
+          //   const currentValues = Object.fromEntries(
+          //     Object.entries(activePreset).map(([k, v]: any) => [k, v.value])
+          //   )
+          Promise.resolve().then(() =>
+            runBacktestSimple(strategyPath, cleanedInputs)
+          )
+        }
       })
   }, [presetPath])
 
@@ -120,7 +127,6 @@ export default function StrategyInputs({
   }
 
   const runBacktest = async () => {
-    console.log(strategyPath)
     console.log(JSON.stringify({ path: strategyPath, inputs: values }))
 
     if (!strategyPath) return
@@ -165,6 +171,7 @@ export default function StrategyInputs({
               timeframe: fields.timeframe?.value,
             })
           }}
+          strategyPath={strategyPath}
         />
       )}
 
@@ -268,7 +275,7 @@ export default function StrategyInputs({
           background: "#030",
           color: "#0f0",
         }}
-        onClick={runBacktest}
+        onClick={() => runBacktestSimple(strategyPath!, values)}
       >
         Run Backtest
       </button>
