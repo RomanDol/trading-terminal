@@ -4,6 +4,7 @@ import { usePresetManager } from "./usePresetManager"
 import { replaceWithFreshTempVersion } from "./usePresetManager"
 import { useSearchParams } from "react-router-dom"
 import { cleanPresetInputs } from "../../utils/cleanInputs"
+import { useMarket } from "../MarketContext"
 
 const API = import.meta.env.VITE_API_URL
 
@@ -20,7 +21,7 @@ export default function PresetSelector({
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
   // const initialPreset = searchParams.get("preset") || ""
-
+  const { symbol, timeframe } = useMarket()  
   const [isLoadingPreset, setIsLoadingPreset] = useState(false)
   const [presets, setPresets] = useState<string[]>([])
   // const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset)
@@ -100,6 +101,7 @@ export default function PresetSelector({
 
     return () => clearTimeout(timeout)
   }, [JSON.stringify(currentValues)])
+  // console.log("symbol" + symbol + timeframe)
 
   return (
     <PresetControls
@@ -127,43 +129,50 @@ export default function PresetSelector({
         // Обновляем selectedPreset + URL
         setSelectedPreset(name)
 
-        loadPreset(name, selectedPreset, presets)
+        loadPreset(name, selectedPreset, presets, symbol, timeframe)
       }}
+      
       onSave={async () => {
         const oldBaseName = selectedPreset.replace(/^__\d+__/, "")
         const newBaseName = newName.replace(/^__\d+__/, "")
 
         const isRenaming = oldBaseName !== newBaseName
         const nameExists = presets.includes(newBaseName)
-
+        
         if (!isRenaming && nameExists) {
           const confirmed = window.confirm(
             `Preset "${newBaseName}" already exists. Do you want to overwrite it?`
           )
           if (!confirmed) return
         }
-
+        
         if (isRenaming) {
           await savePreset(newBaseName, currentValues, presets)
           await replaceWithFreshTempVersion(
             presetPath,
             newBaseName,
             currentValues,
-            setPresets
+            setPresets,
+            symbol,
+            timeframe
           )
         } else {
           await replaceWithFreshTempVersion(
             presetPath,
             oldBaseName,
             currentValues,
-            setPresets
+            setPresets,
+            symbol,
+            timeframe
           )
           await savePreset(newBaseName, currentValues, presets)
           await replaceWithFreshTempVersion(
             presetPath,
             newBaseName,
             currentValues,
-            setPresets
+            setPresets,
+            symbol,
+            timeframe
           )
         }
       }}

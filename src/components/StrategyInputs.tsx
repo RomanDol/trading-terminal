@@ -5,13 +5,14 @@ import { useRef } from "react"
 import { useEffect, useState } from "react"
 import PresetSelector from "./PresetSelector/PresetSelector"
 
+
 export default function StrategyInputs({
   presetPath,
   strategyPath,
 }: {
   presetPath: string | null
   strategyPath: string | null
-}) {
+   }) {
   const emitRefreshTrades = () => {
     window.dispatchEvent(new CustomEvent("refresh-trades"))
   }
@@ -80,9 +81,11 @@ export default function StrategyInputs({
         await replaceWithFreshTempVersion(
           presetPath,
           baseName,
-          activePreset,
-          () => {}
-        )
+           activePreset,
+           () => {},
+           symbol,
+           timeframe
+         )
 
         const cleanedInputs = cleanPresetInputs(activePreset)
         console.log("run strategy - load/reload preset")

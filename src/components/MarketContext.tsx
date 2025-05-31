@@ -13,9 +13,15 @@ type MarketContextType = {
 const MarketContext = createContext<MarketContextType | undefined>(undefined)
 
 export function MarketProvider({ children }: { children: ReactNode }) {
-  const [symbol, setSymbol] = useState("BTCUSDT")
-  const [timeframe, setTimeframe] = useState("1m")
+  
   const [searchParams] = useSearchParams()
+
+  const [symbol, setSymbol] = useState(
+    () => searchParams.get("symbol") ?? "BTCUSDT"
+  )
+  const [timeframe, setTimeframe] = useState(
+    () => searchParams.get("timeframe") ?? "1m"
+  )
 
   useEffect(() => {
     const symbolFromUrl = searchParams.get("symbol")

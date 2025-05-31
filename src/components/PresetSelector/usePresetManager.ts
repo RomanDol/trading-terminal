@@ -1,9 +1,9 @@
 import { useCallback } from "react"
 import { cleanPresetInputs } from "../../utils/cleanInputs"
-import { useMarket } from "../MarketContext" // Добавляем импорт
+import { useMarket } from "../MarketContext" 
 
 const API = import.meta.env.VITE_API_URL
-// -------
+// const { symbol, timeframe } = useMarket()
 export function usePresetManager({
   presetPath,
   onSelectPreset,
@@ -20,8 +20,7 @@ export function usePresetManager({
   setNewName: React.Dispatch<React.SetStateAction<string>>
   setVersion: React.Dispatch<React.SetStateAction<number>>
   setIsLoadingPreset?: (value: boolean) => void
-}) {
-  const marketContext = useMarket() // Получаем контекст целиком
+  }) {
   const deleteTempVersions = useCallback(
     async (base: string) => {
       const res = await fetch(`${API}/api/presets/list`, {
@@ -71,12 +70,12 @@ export function usePresetManager({
       name: string,
       current: string,
       presets: string[],
-      currentMarketContext?: { symbol: string; timeframe: string }
+      symbol: string,
+      timeframe: string
     ) => {
       setIsLoadingPreset?.(true)
       const prevBase = current.replace(/^__\d+__/, "")
       const newBase = name.replace(/^__\d+__/, "")
-
       const currentIsTemp = current.startsWith("__")
       const currentVersion = currentIsTemp
         ? parseInt(current.split("__")[1])
@@ -103,51 +102,43 @@ export function usePresetManager({
       const data = await res.json()
       if (!data.success) return
 
-      // Создаем копию загруженных данных
-      const loadedInputs = { ...data.inputs }
-
-      // Если переданы актуальные значения из контекста, обновляем их
-      if (currentMarketContext) {
-        if (loadedInputs.symbol) {
-          loadedInputs.symbol = {
-            ...loadedInputs.symbol,
-            value: currentMarketContext.symbol,
-          }
-        }
-        if (loadedInputs.timeframe) {
-          loadedInputs.timeframe = {
-            ...loadedInputs.timeframe,
-            value: currentMarketContext.timeframe,
-          }
-        }
-      }
-
       const autoName = `__0__${newBase}`
       setSelectedPreset(autoName)
       setNewName(newBase)
       setPresets((prev) =>
         prev.includes(autoName) ? prev : [...prev, autoName]
       )
+      onSelectPreset(autoName, data.inputs)
 
-      // Передаем обновленные данные в onSelectPreset
-      onSelectPreset(autoName, loadedInputs)
+      // Подготовка inputs с актуальными symbol/timeframe
+      const updatedInputs = {
+        ...data.inputs,
+        symbol: data.inputs.symbol
+          ? { ...data.inputs.symbol, value: symbol }
+          : undefined,
+        timeframe: data.inputs.timeframe
+          ? { ...data.inputs.timeframe, value: timeframe }
+          : undefined,
+        isActive: true,
+      }
 
-      // ----------------------
-      const cleanedInputs = cleanPresetInputs(loadedInputs)
-      console.log("run strategy - select preset")
-      console.log(cleanedInputs)
-      // ----------------------
-
-      // Сохраняем __0__ версию с актуальными значениями из контекста
       await fetch(`${API}/api/presets/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           presetPath,
           presetName: autoName,
-          inputs: { ...loadedInputs, isActive: true },
+          inputs: updatedInputs,
         }),
       })
+
+      // ----------------------
+      const cleanedInputs = cleanPresetInputs(data.inputs)
+      console.log("run strategy - select preset")
+      // console.log(data.inputs)
+      console.log(cleanedInputs)
+
+      // ----------------------
 
       const nextVersion =
         Math.max(
@@ -197,25 +188,28 @@ export function usePresetManager({
   )
 
   return {
-    loadPreset: (
-      name: string,
-      current: string,
-      presets: string[],
-      currentMarketContext?: { symbol: string; timeframe: string }
-    ) => loadPreset(name, current, presets, currentMarketContext),
+    loadPreset,
     savePreset,
     deletePreset,
     deleteTempVersions,
   }
 }
 
+
+
+
 export async function replaceWithFreshTempVersion(
   presetPath: string,
   baseName: string,
   inputs: any,
-  setPresets: (p: string[]) => void
+  setPresets: (p: string[]) => void,
+  symbol: string,
+  timeframe: string
 ) {
   const API = import.meta.env.VITE_API_URL
+  // const { symbol, timeframe } = useMarket()
+
+  
 
   // Получаем текущий список пресетов
   const existingListRes = await fetch(`${API}/api/presets/list`, {
@@ -245,9 +239,22 @@ export async function replaceWithFreshTempVersion(
     }
   }
 
+
+  
+  
+
+  
+
   // Сохраняем новую временную версию __0__
   const tempName = `__0__${baseName}`
   const inputsCopy = { ...inputs, isActive: false }
+
+  if (symbol && inputsCopy.symbol) {
+    inputsCopy.symbol.value = symbol
+  }
+  if (timeframe && inputsCopy.timeframe) {
+    inputsCopy.timeframe.value = timeframe
+  }
 
   await fetch(`${API}/api/presets/save`, {
     method: "POST",
